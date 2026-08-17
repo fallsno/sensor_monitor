@@ -1,0 +1,31 @@
+/* 3D View Specific Overrides */
+model-viewer {
+    --poster-color: transparent;
+}
+
+/* Hide default AR button */
+model-viewer::part(default-ar-button) {
+    display: none;
+}
+
+/* Custom Hotspot animations */
+.Hotspot {
+    position: relative;
+    border: 2px solid rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.8), inset 0 0 10px rgba(56, 189, 248, 0.8);
+}
+.Hotspot::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid rgba(56, 189, 248, 0.8);
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+    75%, 100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}

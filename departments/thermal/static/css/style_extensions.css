@@ -1,0 +1,504 @@
+/* ================= 沉浸式数字孪生主视图专用样式 ================= */
+
+.immersive-view .digital-twin-container {
+    position: relative;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at center, #111827 0%, #050b14 100%);
+    display: flex; align-items: center; justify-content: center;
+}
+
+.immersive-view .ambient-light {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
+    background: radial-gradient(circle at 50% 30%, rgba(56,189,248,0.05) 0%, transparent 50%);
+}
+
+/* ================= 大光环：健康度仪表盘 ================= */
+.immersive-view .health-halo-container {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 75vmin; height: 75vmin; border-radius: 50%;
+    border: 2px dashed rgba(74, 222, 128, 0.2);
+    box-shadow: 0 0 150px rgba(74, 222, 128, 0.15) inset;
+    z-index: 1; pointer-events: none;
+    transition: border-color 0.8s ease, box-shadow 0.8s ease;
+}
+.immersive-view .health-halo-inner {
+    position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; border-radius: 50%;
+    border: 2px solid rgba(74, 222, 128, 0.2); border-left: 3px solid transparent; border-right: 3px solid transparent;
+    animation: rotate-halo-reverse 20s linear infinite; transition: border-color 0.8s ease;
+}
+.immersive-view .health-halo-outer {
+    position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; border-radius: 50%;
+    border: 1px solid rgba(74, 222, 128, 0.1); border-top: 2px solid transparent;
+    animation: rotate-halo 45s linear infinite; transition: border-color 0.8s ease;
+}
+.immersive-view .health-progress-ring {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%;
+    background: conic-gradient(from 225deg, #4ade80 0deg, transparent 0deg);
+    -webkit-mask: radial-gradient(transparent 68%, black 69%);
+    mask: radial-gradient(transparent 68%, black 69%);
+    z-index: 2; opacity: 0.8; transition: background 0.8s ease;
+}
+.immersive-view .health-halo-glow {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 90vmin; height: 90vmin; border-radius: 50%;
+    background: radial-gradient(circle, rgba(74, 222, 128, 0.05) 0%, transparent 70%);
+    z-index: 0; pointer-events: none; transition: background 0.8s ease;
+}
+
+@keyframes rotate-halo { 100% { transform: rotate(360deg); } }
+@keyframes rotate-halo-reverse { 100% { transform: rotate(-360deg); } }
+
+/* 顶部健康度分数 */
+.immersive-view .health-score-hud {
+    position: absolute; top: calc(50% - 37.5vmin - 60px); left: 50%; transform: translateX(-50%);
+    text-align: center; z-index: 100; pointer-events: none; display: flex; flex-direction: column; align-items: center;
+}
+.immersive-view .health-score-hud .score { 
+    font-size: 52px; font-weight: bold; color: #4ade80; text-shadow: 0 0 20px rgba(74,222,128,0.5); 
+    font-family: monospace; transition: color 0.5s ease; line-height: 1;
+}
+.immersive-view .health-score-hud .label { font-size: 13px; color: #94a3b8; letter-spacing: 4px; margin-top: 4px; }
+.immersive-view .health-score-hud::after { content: ''; display: block; width: 2px; height: 20px; background: currentColor; margin-top: 5px; opacity: 0.5; }
+
+/* ================= 中心：整体滚筒 ================= */
+.immersive-view .main-drum-wrapper {
+    position: absolute;
+    width: 60%;
+    height: 60%;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.immersive-view .main-drum-wrapper.shifted {
+    width: 34%;
+    height: 34%;
+    top: 24%;
+    left: 73%;
+}
+.immersive-view .drum-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.8)); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+.immersive-view .main-drum-wrapper.shifted .drum-img { filter: drop-shadow(0 20px 40px rgba(0,0,0,0.8)) brightness(0.5); }
+
+.immersive-view .hotspot-area {
+    display: none;
+}
+@keyframes pulse-hotspot { 0% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0.5; } }
+
+/* ================= 右侧：核心部件细节 ================= */
+.immersive-view .detail-components-group {
+    position: absolute;
+    top: 33%;
+    right: 4%;
+    transform: translateY(-50%) translateX(120px) scale(0.92);
+    width: 42vw;
+    height: 56vh;
+    z-index: 20;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.immersive-view .detail-components-group.visible { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(0) scale(1); }
+
+/* --- 部件图像 --- */
+.immersive-view .detail-ring {
+    position: absolute; top: 30%; left: 35%; width: 30%; height: 60%; object-fit: contain;
+    filter: drop-shadow(0 0 20px rgba(249, 115, 22, 0.3)); z-index: 2;
+}
+.immersive-view .detail-wheel { position: absolute; width: 22%; height: 30%; object-fit: contain; z-index: 2; }
+.immersive-view .detail-wheel.left { top: 60%; left: 15%; filter: drop-shadow(0 0 15px rgba(248, 113, 113, 0.3)); }
+.immersive-view .detail-wheel.right { top: 60%; right: 15%; filter: drop-shadow(0 0 15px rgba(167, 139, 250, 0.3)); }
+
+/* ================= 部件文本标签 (重新布局) ================= */
+.immersive-view .part-label { position: absolute; z-index: 30; pointer-events: none; text-align: center; }
+.immersive-view .part-name { font-size: 13px; color: #f1f5f9; font-weight: bold; letter-spacing: 1px; text-shadow: 0 2px 4px #000; }
+.immersive-view .part-speed { font-size: 18px; color: #38bdf8; font-family: monospace; font-weight: bold; text-shadow: 0 2px 4px #000; margin-top: 3px; }
+.immersive-view .part-speed span { font-size: 11px; color: #94a3b8; margin-left: 2px; }
+
+/* 滚圈标签：正上方，通过 JS 跟随移动 */
+.immersive-view .part-label.ring { top: 15%; left: 50%; transform: translateX(-50%); }
+.immersive-view .part-label.ring .part-speed { color: #f97316; }
+
+/* 限位轮标签：限位轮的正上方 (Y 轴靠上，不遮挡图片) */
+.immersive-view .part-label.wheel-left { top: 45%; left: 26%; transform: translateX(-50%); }
+.immersive-view .part-label.wheel-left .part-speed { color: #f87171; }
+
+.immersive-view .part-label.wheel-right { top: 45%; right: 26%; transform: translateX(50%); }
+.immersive-view .part-label.wheel-right .part-speed { color: #a78bfa; }
+
+/* 间隙与压力文本框：移到底部靠外侧 */
+.immersive-view .dynamic-indicator {
+    position: absolute; z-index: 30; display: flex; flex-direction: column; pointer-events: none;
+}
+.immersive-view .dynamic-indicator.ind-left { top: 82%; bottom: auto; left: 4%; align-items: flex-start; text-align: left; }
+.immersive-view .dynamic-indicator.ind-right { top: 82%; bottom: auto; right: 4%; align-items: flex-end; text-align: right; }
+
+.immersive-view .ind-val { font-size: 22px; font-weight: bold; font-family: monospace; line-height: 1; }
+.immersive-view .ind-val span { font-size: 12px; margin-left: 2px; }
+.immersive-view .ind-val.pressure { color: #f87171; text-shadow: 0 0 10px rgba(248,113,113,0.8); }
+.immersive-view .ind-val.gap { color: #38bdf8; text-shadow: 0 0 10px rgba(56,189,248,0.8); }
+.immersive-view .ind-name { font-size: 10px; color: #94a3b8; letter-spacing: 1px; }
+
+/* ================= SVG 动态追踪引线 (绕行限位轮) ================= */
+.immersive-view .hud-svg-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 25; pointer-events: none;
+}
+
+/* ================= 底部三图表布局 ================= */
+.immersive-view .bottom-hud-container {
+    position: absolute; bottom: 2%; left: 0; width: 100%; height: 25vh;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 0 4vw; gap: 3vw; z-index: 30; pointer-events: none;
+}
+.immersive-view .hud-chart-panel { flex: 1; height: 100%; display: flex; flex-direction: column; pointer-events: auto; }
+.immersive-view .hud-title {
+    font-size: 12px; color: #94a3b8; letter-spacing: 1.5px; margin-bottom: 5px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px; padding-left: 5px;
+}
+.immersive-view .hud-title::before { content: ''; display: block; width: 4px; height: 12px; background: #38bdf8; }
+.immersive-view .chart-box { width: 100%; flex: 1; }
+
+/* ================= 沉浸模式全屏与隐藏无关组件 ================= */
+/* 已经在 main.js 中通过切换 display 状态实现隔离 */
+
+/* 主滚筒上移 */
+#immersiveMainDrum {
+    top: 40%;
+}
+#immersiveComponentsGroup {
+    top: 33%;
+}
+
+/* 全局控制面板 */
+.immersive-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 15px;
+    z-index: 200;
+}
+
+.immersive-btn {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s;
+}
+
+.immersive-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+/* 全息面板与表格图表 */
+.holo-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 70%;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(56, 189, 248, 0.1);
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.holo-panel-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.1), transparent);
+}
+
+.holo-panel-header h3 {
+    margin: 0;
+    color: #e2e8f0;
+    font-weight: 500;
+    letter-spacing: 2px;
+}
+
+.holo-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.holo-close-btn:hover {
+    color: #f87171;
+}
+
+.holo-panel-content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+.holo-table-container {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.holo-chart-container {
+    flex: 2;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.holo-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #cbd5e1;
+}
+
+.holo-table th, .holo-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.holo-table th {
+    color: #38bdf8;
+    font-weight: normal;
+}
+
+/* HUD 控制台与环形悬浮菜单 */
+.immersive-hud-top {
+    position: absolute; 
+    top: 20px; 
+    left: 50%; 
+    transform: translateX(-50%);
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    width: 90%; 
+    background: rgba(15, 23, 42, 0.6); 
+    backdrop-filter: blur(10px);
+    padding: 10px 20px; 
+    border-radius: 8px; 
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    z-index: 200;
+    color: #e2e8f0;
+}
+
+.immersive-radial-menu {
+    position: absolute; 
+    left: 20px; 
+    top: 50%; 
+    transform: translateY(-50%);
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+    z-index: 200;
+}
+
+.radial-item {
+    width: 60px; 
+    height: 60px; 
+    background: rgba(15, 23, 42, 0.6); 
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 50%; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    color: #94a3b8; 
+    font-size: 12px; 
+    cursor: pointer; 
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+}
+
+.radial-item i {
+    font-size: 18px;
+    margin-bottom: 2px;
+}
+
+.radial-item:hover, .radial-item.active {
+    background: rgba(56, 189, 248, 0.2); 
+    color: #38bdf8; 
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+}
+
+/* 标准模式布局修复 */
+.bottom-dual-charts {
+    margin-top: 8px !important;
+}
+
+.content-area {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* 确保标准模式页面内容过长时可以滚动，并在底部留有边距 */
+.page.active {
+    padding-bottom: 20px;
+}
+
+/* 沉浸模式中展示标准页面的自适应 */
+#immersiveHoloPanel .page {
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+}
+#immersiveHoloPanel .chart-card,
+#immersiveHoloPanel .settings-card,
+#immersiveHoloPanel .sensor-card {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(56, 189, 248, 0.3);
+}
+#immersiveHoloPanel .page * {
+    color: #e2e8f0;
+}
+
+/* ==================== 版本更新记录弹窗 ==================== */
+.release-notes-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.release-notes-modal[hidden] {
+    display: none;
+}
+
+.release-notes-dialog {
+    width: 500px;
+    max-width: 90vw;
+    max-height: 80vh;
+    background: #1e293b;
+    border: 1px solid #38bdf8;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    animation: modalFadeIn 0.3s ease-out;
+    overflow-y: auto;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.release-notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.release-notes-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.release-notes-header h3 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 20px;
+}
+
+.release-notes-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.release-notes-close:hover {
+    color: #f8fafc;
+}
+
+.release-notes-meta {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 12px;
+}
+
+.release-notes-list {
+    margin: 0;
+    padding: 0 0 0 20px;
+    color: #e2e8f0;
+    line-height: 1.6;
+}
+
+.release-notes-list li {
+    margin-bottom: 8px;
+}
+
+.release-history-list {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #334155;
+}
+
+.history-item {
+    margin-bottom: 16px;
+}
+
+.history-version {
+    color: #38bdf8;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.history-date {
+    color: #64748b;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.history-notes {
+    font-size: 13px;
+    color: #cbd5e1;
+    margin: 4px 0 0 0;
+    padding-left: 15px;
+}
