@@ -1,0 +1,308 @@
+{
+  "basic": {
+    "customerName": "HDOAD",
+    "machineNo": "DR-2602",
+    "modelNo": "V3.5.3",
+    "orderNo": "PO-001"
+  },
+  "channel_mapping": {
+    "ai": [
+      {
+        "channel": "ai0",
+        "index": 0,
+        "sensor": "upper_pressure",
+        "scale": 1,
+        "offset": 0
+      },
+      {
+        "channel": "ai1",
+        "index": 1,
+        "sensor": "lower_pressure",
+        "scale": 1,
+        "offset": 0
+      }
+    ],
+    "counter": [
+      {
+        "channel": "ctr0",
+        "sensor": "left_rpm",
+        "pulses_per_rev": 1,
+        "scale": 60
+      },
+      {
+        "channel": "ctr1",
+        "sensor": "right_rpm",
+        "pulses_per_rev": 1,
+        "scale": 60
+      }
+    ]
+  },
+  "coaxialHistory": [
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:54",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:54",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:54",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:54",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:55",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:55",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:55",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:55",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:55",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:55",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:55",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:56",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:56",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:56",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:56",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:56",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:56",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:57",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:57",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:57",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "15:01:57",
+      "verticalOut": 0.78
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "14:13:25",
+      "verticalOut": 0.84
+    },
+    {
+      "coaxialIn": 0.85,
+      "time": "14:13:30",
+      "verticalOut": 0.66
+    },
+    {
+      "coaxialIn": 51,
+      "time": "14:13:35",
+      "verticalOut": 0.66
+    },
+    {
+      "coaxialIn": 51,
+      "time": "14:13:39",
+      "verticalOut": 556
+    },
+    {
+      "coaxialIn": 51,
+      "time": "14:13:44",
+      "verticalOut": 55
+    },
+    {
+      "coaxialIn": 4,
+      "time": "14:13:51",
+      "verticalOut": 55
+    },
+    {
+      "coaxialIn": 4,
+      "time": "16:59:06",
+      "verticalOut": 55
+    }
+  ],
+  "health": {
+    "cycleSeconds": 1,
+    "initialDisplacement": 0.2,
+    "lowerCriticalPressure": 3.5,
+    "lowerPreloadPressure": 2,
+    "upperCriticalPressure": 3.5,
+    "upperPreloadPressure": 2
+  },
+  "indicators": {
+    "contact_area": 92.5,
+    "environment_temp": 25.6,
+    "test_time": 127.5,
+    "vibration_value": 0.18,
+    "wheel_gap": 2.35
+  },
+  "language": {
+    "code": "zh"
+  },
+  "port": {
+    "ai_channels": "ai0:ai15",
+    "counter1": "ctr0",
+    "counter2": "ctr1",
+    "device": "Dev1",
+    "freq_max": 1000,
+    "freq_min": 0.1,
+    "pulses_per_rev": 1
+  },
+  "pressure": {
+    "displayMax": 10,
+    "originalMax": 10,
+    "unit": "N"
+  },
+  "runoutHistory": [
+    {
+      "time": "15:01:59",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:01:59",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:01:59",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:01:59",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:01:59",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:01:59",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:01:59",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:02:00",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:02:00",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "15:02:00",
+      "wheel1": 0.35,
+      "wheel2": 0.42,
+      "wheel3": 0.38,
+      "wheel4": 0.45
+    },
+    {
+      "time": "14:14:01",
+      "wheel1": -1.65,
+      "wheel2": 2.42,
+      "wheel3": 3.38,
+      "wheel4": -1.55
+    },
+    {
+      "time": "14:14:11",
+      "wheel1": 2.35,
+      "wheel2": 5.42,
+      "wheel3": 0.38,
+      "wheel4": -3.55
+    },
+    {
+      "time": "16:59:08",
+      "wheel1": 2.35,
+      "wheel2": 5.42,
+      "wheel3": 0.38,
+      "wheel4": -3.55
+    }
+  ],
+  "version": "1.0"
+}

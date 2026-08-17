@@ -1,0 +1,7 @@
+{
+  "client_id": "fa7341b5-505a-4b38-893e-550d95334540",
+  "client_name": "默认监测采集端",
+  "server_url": "http://127.0.0.1:5001",
+  "is_client_mode": true,
+  "created_at": "2026-05-28 10:00:00"
+}

@@ -1,0 +1,504 @@
+{
+  "id": "DAM-3505N",
+  "name": "DAM-3505N 三相电量模块",
+  "registers": [
+    {
+      "name": "module_type",
+      "label": "模块类型",
+      "address": 128,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "module_suffix",
+      "label": "模块类型后缀",
+      "address": 129,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "modbus_protocol_id",
+      "label": "Modbus协议标识",
+      "address": 130,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "module_version",
+      "label": "模块版本号",
+      "address": 131,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "module_address",
+      "label": "模块地址",
+      "address": 132,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "baudrate_code",
+      "label": "波特率代码",
+      "address": 133,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "parity_select",
+      "label": "奇偶校验选择",
+      "address": 134,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "voltage_range",
+      "label": "电压量程",
+      "address": 256,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "V"
+    },
+    {
+      "name": "current_range",
+      "label": "电流量程",
+      "address": 257,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "A"
+    },
+    {
+      "name": "energy_precision",
+      "label": "电度精度单位",
+      "address": 258,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "ct_ratio",
+      "label": "电流互感器变比",
+      "address": 259,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "pt_ratio",
+      "label": "电压互感器变比",
+      "address": 260,
+      "function_code": 3,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "a_current",
+      "label": "A相电流有效值",
+      "address": 0,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "A"
+    },
+    {
+      "name": "b_current",
+      "label": "B相电流有效值",
+      "address": 1,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "A"
+    },
+    {
+      "name": "c_current",
+      "label": "C相电流有效值",
+      "address": 2,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "A"
+    },
+    {
+      "name": "a_voltage",
+      "label": "A相电压有效值",
+      "address": 3,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "V"
+    },
+    {
+      "name": "b_voltage",
+      "label": "B相电压有效值",
+      "address": 4,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "V"
+    },
+    {
+      "name": "c_voltage",
+      "label": "C相电压有效值",
+      "address": 5,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "V"
+    },
+    {
+      "name": "ab_line_voltage",
+      "label": "AB线电压",
+      "address": 6,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "V"
+    },
+    {
+      "name": "bc_line_voltage",
+      "label": "BC线电压",
+      "address": 7,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "V"
+    },
+    {
+      "name": "ca_line_voltage",
+      "label": "CA线电压",
+      "address": 8,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "V"
+    },
+    {
+      "name": "a_active_power",
+      "label": "A相有功功率",
+      "address": 9,
+      "function_code": 4,
+      "data_type": "int16",
+      "scale": 1.0,
+      "unit": "W"
+    },
+    {
+      "name": "b_active_power",
+      "label": "B相有功功率",
+      "address": 10,
+      "function_code": 4,
+      "data_type": "int16",
+      "scale": 1.0,
+      "unit": "W"
+    },
+    {
+      "name": "c_active_power",
+      "label": "C相有功功率",
+      "address": 11,
+      "function_code": 4,
+      "data_type": "int16",
+      "scale": 1.0,
+      "unit": "W"
+    },
+    {
+      "name": "a_reactive_power",
+      "label": "A相无功功率",
+      "address": 12,
+      "function_code": 4,
+      "data_type": "int16",
+      "scale": 1.0,
+      "unit": "var"
+    },
+    {
+      "name": "b_reactive_power",
+      "label": "B相无功功率",
+      "address": 13,
+      "function_code": 4,
+      "data_type": "int16",
+      "scale": 1.0,
+      "unit": "var"
+    },
+    {
+      "name": "c_reactive_power",
+      "label": "C相无功功率",
+      "address": 14,
+      "function_code": 4,
+      "data_type": "int16",
+      "scale": 1.0,
+      "unit": "var"
+    },
+    {
+      "name": "a_apparent_power",
+      "label": "A相视在功率",
+      "address": 15,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "VA"
+    },
+    {
+      "name": "b_apparent_power",
+      "label": "B相视在功率",
+      "address": 16,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "VA"
+    },
+    {
+      "name": "c_apparent_power",
+      "label": "C相视在功率",
+      "address": 17,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "VA"
+    },
+    {
+      "name": "a_active_energy",
+      "label": "A相有功电度",
+      "address": 18,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kWh"
+    },
+    {
+      "name": "b_active_energy",
+      "label": "B相有功电度",
+      "address": 20,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kWh"
+    },
+    {
+      "name": "c_active_energy",
+      "label": "C相有功电度",
+      "address": 22,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kWh"
+    },
+    {
+      "name": "a_reactive_energy",
+      "label": "A相无功电度",
+      "address": 24,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kvarh"
+    },
+    {
+      "name": "b_reactive_energy",
+      "label": "B相无功电度",
+      "address": 26,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kvarh"
+    },
+    {
+      "name": "c_reactive_energy",
+      "label": "C相无功电度",
+      "address": 28,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kvarh"
+    },
+    {
+      "name": "a_apparent_energy",
+      "label": "A相视在电度",
+      "address": 30,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kVAh"
+    },
+    {
+      "name": "b_apparent_energy",
+      "label": "B相视在电度",
+      "address": 32,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kVAh"
+    },
+    {
+      "name": "c_apparent_energy",
+      "label": "C相视在电度",
+      "address": 34,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kVAh"
+    },
+    {
+      "name": "a_power_factor",
+      "label": "A相功率因数",
+      "address": 36,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "b_power_factor",
+      "label": "B相功率因数",
+      "address": 37,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "c_power_factor",
+      "label": "C相功率因数",
+      "address": 38,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "a_frequency",
+      "label": "A相信号频率",
+      "address": 39,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "Hz"
+    },
+    {
+      "name": "b_frequency",
+      "label": "B相信号频率",
+      "address": 40,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "Hz"
+    },
+    {
+      "name": "c_frequency",
+      "label": "C相信号频率",
+      "address": 41,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "Hz"
+    },
+    {
+      "name": "total_active_power",
+      "label": "三相总有功功率",
+      "address": 42,
+      "function_code": 4,
+      "data_type": "int16",
+      "scale": 1.0,
+      "unit": "W"
+    },
+    {
+      "name": "total_reactive_power",
+      "label": "三相总无功功率",
+      "address": 43,
+      "function_code": 4,
+      "data_type": "int16",
+      "scale": 1.0,
+      "unit": "var"
+    },
+    {
+      "name": "total_apparent_power",
+      "label": "三相总视在功率",
+      "address": 44,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "VA"
+    },
+    {
+      "name": "total_active_energy",
+      "label": "三相总有功电度",
+      "address": 45,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kWh"
+    },
+    {
+      "name": "total_reactive_energy",
+      "label": "三相总无功电度",
+      "address": 47,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kvarh"
+    },
+    {
+      "name": "total_apparent_energy",
+      "label": "三相总视在电度",
+      "address": 49,
+      "function_code": 4,
+      "data_type": "uint32",
+      "scale": 1.0,
+      "byte_order": "ABCD",
+      "unit": "kVAh"
+    },
+    {
+      "name": "total_power_factor",
+      "label": "总功率因数",
+      "address": 51,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": ""
+    },
+    {
+      "name": "temperature",
+      "label": "温度",
+      "address": 52,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "℃"
+    },
+    {
+      "name": "humidity",
+      "label": "湿度",
+      "address": 53,
+      "function_code": 4,
+      "data_type": "uint16",
+      "scale": 1.0,
+      "unit": "%"
+    }
+  ]
+}

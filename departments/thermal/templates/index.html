@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pageTitle">滚筒监测系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_extensions.css') }}">
+    <script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/highcharts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+</head>
+<body>
+    <div class="app-container" id="standardApp">
+        <!-- 顶部状态栏 -->
+        <div class="status-bar">
+            <div class="system-title">
+                <img src="{{ url_for('static', filename='images/LOGO-15.png') }}" alt="Logo" class="logo">
+                <span data-i18n="systemTitle">滚筒监测系统</span>
+            </div>
+            <div class="system-status">
+                <button id="themeToggleBtn" class="control-btn" style="height: 28px; min-width: auto; padding: 0 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);">
+                    <i class="fas fa-magic"></i> <span>沉浸模式</span>
+                </button>
+                <div id="systemStatus" class="status-indicator status-idle">
+                    <i class="fas fa-circle"></i> <span data-i18n="statusIdle">就绪</span>
+                </div>
+                <div id="currentDateTime">2026-03-02 10:30:45</div>
+            </div>
+        </div>
+
+        <!-- 主要内容区 -->
+        <div class="main-content">
+            <!-- 左侧导航（紧凑基本信息） -->
+            <div class="nav-sidebar">
+                <div class="nav-info">
+                    <div class="nav-info-item">
+                        <div class="nav-info-label" data-i18n="customerName">客户名称</div>
+                        <div class="nav-info-value" id="navCustomerName">XX水泥</div>
+                    </div>
+                    <div class="nav-info-item">
+                        <div class="nav-info-label" data-i18n="machineNo">机台编号</div>
+                        <div class="nav-info-value" id="navMachineNo">DR-2602</div>
+                    </div>
+                    <div class="nav-info-item">
+                        <div class="nav-info-label" data-i18n="orderNo">生成计单</div>
+                        <div class="nav-info-value" id="navOrderNo">PO-001</div>
+                    </div>
+                    <div class="nav-info-item">
+                        <div class="nav-info-label" data-i18n="modelNo">设备型号</div>
+                        <div class="nav-info-value" id="navModelNo">V3.5.3</div>
+                    </div>
+                </div>
+
+                <div class="nav-category" data-i18n="navOverview">系统总览</div>
+                <div class="nav-item active" data-page="home">
+                    <div><i class="fas fa-home"></i> <span data-i18n="navHome">系统主页</span></div>
+                </div>
+
+                <div class="nav-category" data-i18n="navMonitor">数据监测</div>
+                <div class="nav-item" data-page="charts">
+                    <div><i class="fas fa-chart-pie"></i> <span data-i18n="monitorCharts">监测图表</span></div>
+                </div>
+
+                <div class="nav-item" data-page="realtime">
+                    <div><i class="fas fa-chart-line"></i> <span data-i18n="navRealtime">综合数据</span></div>
+                </div>
+                <div class="nav-item" data-page="data">
+                    <div><i class="fas fa-database"></i> 数据管理</div>
+                </div>
+
+                <div class="nav-category">扩展模块</div>
+                <div class="nav-item" onclick="window.location.href='/modbus'">
+                    <div><i class="fas fa-plug"></i> Modbus模块</div>
+                </div>
+
+                <div class="nav-category">系统信息</div>
+                <div class="nav-item" id="versionHistoryEntry">
+                    <div><i class="fas fa-history"></i> 版本记录</div>
+                </div>
+
+                <div class="nav-category" data-i18n="navSystem">系统设置</div>
+                <div class="nav-item" data-page="settings">
+                    <div><i class="fas fa-cog"></i> <span data-i18n="navSettings">系统设置</span></div>
+                </div>
+            </div>
+
+            <!-- 右侧内容区 -->
+            <div class="content-area">
+
+                <!-- ==================== 系统主页 ==================== -->
+                <div id="homePage" class="page active">
+                    <!-- 标准视图 -->
+                    <div class="standard-view home-layout">
+                        <!-- 顶部三列布局 -->
+                        <div class="top-three-columns">
+                            <!-- 左侧：上下限位轮 -->
+                            <div class="left-wheels">
+                                <div class="wheel-card normal" id="upperWheelCard">
+                                    <div class="wheel-title">
+                                        <span><i class="fas fa-arrow-up" style="color:#f87171;"></i> <span data-i18n="upperWheel">上限位轮</span></span>
+                                        <span id="upperWheelStatus" data-i18n="statusNormal">正常</span>
+                                    </div>
+                                    <div class="wheel-image-container">
+                                        <img id="upperWheelImage" class="wheel-image" src="/static/images/gifs/wheel-static.gif" alt="上限位轮">
+                                    </div>
+                                    <div class="wheel-stats">
+                                        <div class="wheel-value">
+                                            <span id="upperWheelValue">0.00</span>
+                                            <span class="wheel-unit">MPa</span>
+                                        </div>
+                                        <div class="wheel-speed" id="upperWheelSpeed">0.0 RPM</div>
+                                    </div>
+                                </div>
+                                <div class="wheel-card normal" id="lowerWheelCard">
+                                    <div class="wheel-title">
+                                        <span><i class="fas fa-arrow-down" style="color:#a78bfa;"></i> <span data-i18n="lowerWheel">下限位轮</span></span>
+                                        <span id="lowerWheelStatus" data-i18n="statusNormal">正常</span>
+                                    </div>
+                                    <div class="wheel-image-container">
+                                        <img id="lowerWheelImage" class="wheel-image" src="/static/images/gifs/wheel-static.gif" alt="下限位轮">
+                                    </div>
+                                    <div class="wheel-stats">
+                                        <div class="wheel-value">
+                                            <span id="lowerWheelValue">0.00</span>
+                                            <span class="wheel-unit">MPa</span>
+                                        </div>
+                                        <div class="wheel-speed" id="lowerWheelSpeed">0.0 RPM</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 中间：AT图片 + 圆形健康度卡片 -->
+                            <div class="center-at-image">
+                                <div class="roller-image-container" style="position: relative;">
+                                    <img id="rollerImage" class="roller-image" src="/static/images/gifs/roller-static.gif" alt="滚筒示意图">
+                                    <svg id="annotationSvg" class="annotation-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: visible;"></svg>
+                                </div>
+                                <!-- 圆形健康度卡片 -->
+                                <div class="circular-health-card">
+                                   
+                                    <!-- 左侧参数区 -->
+                                    <div class="params-left">
+                                        <div class="param-item">
+                                            <span class="param-label" data-i18n="upperPreloadLabel">上预紧力</span>
+                                            <span class="param-value" id="healthDisplayUpperPreload">2.0</span>
+                                            <span class="pressure-unit">MPa</span>
+                                            <div class="progress-bar-container"><div class="progress-bar-fill" id="progressUpperPreload" style="width:20%"></div></div>
+                                        </div>
+                                        <div class="param-item">
+                                            <span class="param-label" data-i18n="upperCriticalLabel">上临界压力</span>
+                                            <span class="param-value" id="healthDisplayUpperCritical">3.5</span>
+                                            <span class="pressure-unit">MPa</span>
+                                            <div class="progress-bar-container"><div class="progress-bar-fill" id="progressUpperCritical" style="width:35%"></div></div>
+                                        </div>
+                                        <div class="param-item">
+                                            <span class="param-label" data-i18n="cycleLabel">周期</span>
+                                            <span class="param-value" id="healthDisplayCycle">60</span> s
+                                            <div class="progress-bar-container"><div class="progress-bar-fill" id="progressCycle" style="width:100%"></div></div>
+                                        </div>
+                                    </div>
+                                    <div class="circular-progress-container">
+                                        <svg class="circular-progress" viewBox="0 0 100 100">
+                                            <circle class="progress-bg" cx="50" cy="50" r="40" stroke-width="8" fill="none"/>
+                                            <circle class="progress-fill" id="progressCircle" cx="50" cy="50" r="40" stroke-width="8" fill="none" stroke-dasharray="251.2" stroke-dashoffset="0"/>
+                                            <text class="progress-text" id="progressText" x="50" y="55" text-anchor="middle" dominant-baseline="middle">85%</text>
+                                            <!-- <text class="progress-label" x="50" y="68" text-anchor="middle" dominant-baseline="middle" data-i18n="health">健康度</text> -->
+                                        </svg>
+                                    </div>
+                                    <!-- 右侧参数区 -->
+                                    <div class="params-right">
+                                        <div class="param-item">
+                                            <span class="param-label" data-i18n="lowerPreloadLabel">下预紧力</span>
+                                            <span class="param-value" id="healthDisplayLowerPreload">2.0</span>
+                                            <span class="pressure-unit">MPa</span>
+                                            <div class="progress-bar-container"><div class="progress-bar-fill" id="progressLowerPreload" style="width:20%"></div></div>
+                                        </div>
+                                        <div class="param-item">
+                                            <span class="param-label" data-i18n="lowerCriticalLabel">下临界压力</span>
+                                            <span class="param-value" id="healthDisplayLowerCritical">3.5</span>
+                                            <span class="pressure-unit">MPa</span>
+                                            <div class="progress-bar-container"><div class="progress-bar-fill" id="progressLowerCritical" style="width:35%"></div></div>
+                                        </div>
+                                        <div class="param-item">
+                                            <span class="param-label" data-i18n="initialDispLabel">初始位移</span>
+                                            <span class="param-value" id="healthDisplayInitialDisplacement">0.0</span> mm
+                                            <div class="progress-bar-container"><div class="progress-bar-fill" id="progressInitialDisplacement" style="width:0%"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 右侧：滚圈位移 -->
+                            <div class="right-ring">
+                                <div class="ring-title">
+                                    <span><i class="fas fa-circle"></i> <span data-i18n="ringDisplacement">滚圈位移</span></span>
+                                    <span><span data-i18n="ringSpeed"></span> <span id="ringSpeed">6.6</span> RPM</span>
+                                </div>
+                                <div class="ring-visual-container">
+                                    <div class="horizontal-scale">
+                                        <div class="scale-track"></div>
+                                        <div class="scale-marker" style="left: 0%;"></div>
+                                        <div class="scale-marker" style="left: 25%;"></div>
+                                        <div class="scale-marker" style="left: 50%;"></div>
+                                        <div class="scale-marker" style="left: 75%;"></div>
+                                        <div class="scale-marker" style="left: 100%;"></div>
+                                        <span class="scale-label-top" style="left: 0%;">-4mm</span>
+                                        <span class="scale-label-top" style="left: 25%;">-2mm</span>
+                                        <span class="scale-label-top" style="left: 50%;">0mm</span>
+                                        <span class="scale-label-top" style="left: 75%;">+2mm</span>
+                                        <span class="scale-label-top" style="left: 100%;">+4mm</span>
+                                        <span class="scale-label-bottom" style="left: 0%;">UP</span>
+                                        <span class="scale-label-bottom" style="left: 25%;"></span>
+                                        <span class="scale-label-bottom" style="left: 50%;">MIDDLE</span>
+                                        <span class="scale-label-bottom" style="left: 75%;"></span>
+                                        <span class="scale-label-bottom" style="left: 100%;">LOW</span>
+                                        <div id="positionIndicator" class="position-indicator" style="left: 50%;">
+                                            <div id="positionValue" class="position-value">0.00mm</div>
+                                        </div>
+                                    </div>
+                                    <div class="ring-image-horizontal">
+                                        <img id="ringImage" class="ring-image-moving" src="/static/images/gifs/ring-static.gif" alt="滚圈">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 下方双图表（故障关键信息 + 健康度趋势） -->
+                        <div class="bottom-dual-charts">
+                            <div class="chart-card">
+                                <div class="card-header">
+                                    <span data-i18n="faultKeyInfo">故障关键信息</span>
+                                </div>
+                                <div class="chart-wrapper" id="faultKeyChart"></div>
+                            </div>
+                            <div class="chart-card">
+                                <div class="card-header">
+                                    <span data-i18n="healthTrend">健康度趋势</span>
+                                </div>
+                                <div class="chart-wrapper" id="healthTrendChart"></div>
+                            </div>
+                        </div>
+                    </div> <!-- 结束 standard-view -->
+                </div>
+
+                <!-- ==================== 综合数据页面 ==================== -->
+                <div id="realtimePage" class="page">
+                    <!-- 控制按钮 -->
+                    <div class="control-panel">
+                        <div class="control-buttons">
+                            <button class="control-btn btn-start" id="startBtn">
+                                <i class="fas fa-play"></i> <span data-i18n="start">开始</span>
+                            </button>
+                            <button class="control-btn btn-save" id="saveBtn" disabled>
+                                <i class="fas fa-database"></i> <span data-i18n="saveData">采集</span>
+                            </button>
+                            <button class="control-btn btn-stop" id="stopBtn" disabled>
+                                <i class="fas fa-stop"></i> <span data-i18n="stop">结束</span>
+                            </button>
+                            <button class="control-btn btn-monitor" id="monitorBtn" style="background: #38bdf8;">
+                                <i class="fas fa-eye"></i> <span data-i18n="monitor">实时监控</span>
+                            </button>
+                        </div>
+                        <div class="file-selector">
+                            <input type="text" class="file-input" id="savePath" placeholder="./data" value="./data">
+                            <button class="btn-browse" id="browseBtn">
+                                <i class="fas fa-folder-open"></i> <span data-i18n="browse">浏览</span>
+                            </button>
+                            <button class="btn-browse" id="loadFileBtn" style="background: #4ade80;">
+                                <i class="fas fa-file-import"></i> <span data-i18n="loadFile">加载文件</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 标签页 -->
+                    <div class="tab-header">
+                        <button class="tab-btn active" data-tab="motor" data-i18n="motorCurrent">电机电流</button>
+                        <button class="tab-btn" data-tab="sensor" data-i18n="sensorData">传感器数据</button>
+                    </div>
+
+                    <!-- 电机电流标签页 -->
+                    <div id="motorTab" class="tab-content active">
+                        <div class="sensors-grid">
+                            <!-- 电机1 -->
+                            <div class="sensor-card">
+                                <div class="sensor-header">
+                                    <span class="sensor-title"><i class="fas fa-bolt" style="color:#ef4444;"></i> <span data-i18n="motor">电机</span>1</span>
+                                    <span class="sensor-badge" id="motor1Status" data-i18n="disconnected">未连接</span>
+                                </div>
+                                <div class="chart-container" id="motor1Chart"></div>
+                                <div class="sensor-data-row">
+                                    <div class="data-item"><span data-i18n="current">当前</span>: <span id="motor1Current">--</span>A</div>
+                                    <div class="data-item"><span data-i18n="max">最大</span>: <span id="motor1Max">--</span>A</div>
+                                    <div class="data-item"><span data-i18n="avg">平均</span>: <span id="motor1Avg">--</span>A</div>
+                                </div>
+                            </div>
+                            <!-- 电机2 -->
+                            <div class="sensor-card">
+                                <div class="sensor-header">
+                                    <span class="sensor-title"><i class="fas fa-bolt" style="color:#f97316;"></i> <span data-i18n="motor">电机</span>2</span>
+                                    <span class="sensor-badge" id="motor2Status" data-i18n="disconnected">未连接</span>
+                                </div>
+                                <div class="chart-container" id="motor2Chart"></div>
+                                <div class="sensor-data-row">
+                                    <div class="data-item"><span data-i18n="current">当前</span>: <span id="motor2Current">--</span>A</div>
+                                    <div class="data-item"><span data-i18n="max">最大</span>: <span id="motor2Max">--</span>A</div>
+                                    <div class="data-item"><span data-i18n="avg">平均</span>: <span id="motor2Avg">--</span>A</div>
+                                </div>
+                            </div>
+                            <!-- 电机3 -->
+                            <div class="sensor-card">
+                                <div class="sensor-header">
+                                    <span class="sensor-title"><i class="fas fa-bolt" style="color:#4ade80;"></i> <span data-i18n="motor">电机</span>3</span>
+                                    <span class="sensor-badge" id="motor3Status" data-i18n="disconnected">未连接</span>
+                                </div>
+                                <div class="chart-container" id="motor3Chart"></div>
+                                <div class="sensor-data-row">
+                                    <div class="data-item"><span data-i18n="current">当前</span>: <span id="motor3Current">--</span>A</div>
+                                    <div class="data-item"><span data-i18n="max">最大</span>: <span id="motor3Max">--</span>A</div>
+                                    <div class="data-item"><span data-i18n="avg">平均</span>: <span id="motor3Avg">--</span>A</div>
+                                </div>
+                            </div>
+                            <!-- 电机4 -->
+                            <div class="sensor-card">
+                                <div class="sensor-header">
+                                    <span class="sensor-title"><i class="fas fa-bolt" style="color:#a78bfa;"></i> <span data-i18n="motor">电机</span>4</span>
+                                    <span class="sensor-badge" id="motor4Status" data-i18n="disconnected">未连接</span>
+                                </div>
+                                <div class="chart-container" id="motor4Chart"></div>
+                                <div class="sensor-data-row">
+                                    <div class="data-item"><span data-i18n="current">当前</span>: <span id="motor4Current">--</span>A</div>
+                                    <div class="data-item"><span data-i18n="max">最大</span>: <span id="motor4Max">--</span>A</div>
+                                    <div class="data-item"><span data-i18n="avg">平均</span>: <span id="motor4Avg">--</span>A</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 传感器数据标签页 -->
+                    <div id="sensorTab" class="tab-content">
+                        <!-- 压力传感器 -->
+                        <div class="dual-sensor-card">
+                            <div class="dual-sensor-header">
+                                <span class="dual-sensor-title"><i class="fas fa-weight-hanging" style="color:#f87171;"></i> <span data-i18n="pressureSensor">压力传感器</span></span>
+                                <div class="dual-sensor-badges">
+                                    <span class="sensor-badge" id="upperPressureStatus" data-i18n="disconnected">未连接</span>
+                                    <span class="sensor-badge" id="lowerPressureStatus" data-i18n="disconnected">未连接</span>
+                                </div>
+                            </div>
+                            <div class="dual-sensor-row">
+                                <div class="dual-sensor-col">
+                                    <div class="dual-col-title"><i class="fas fa-arrow-up" style="color:#f87171;"></i> <span data-i18n="upperWheel">上限位轮</span></div>
+                                    <div><span class="dual-col-value" id="upperPressureValue">0.00</span><span class="dual-col-unit">MPa</span></div>
+                                    <div class="dual-chart-container" id="pressureUpperChart"></div>
+                                </div>
+                                <div class="dual-sensor-col">
+                                    <div class="dual-col-title"><i class="fas fa-arrow-down" style="color:#a78bfa;"></i> <span data-i18n="lowerWheel">下限位轮</span></div>
+                                    <div><span class="dual-col-value" id="lowerPressureValue">0.00</span><span class="dual-col-unit">MPa</span></div>
+                                    <div class="dual-chart-container" id="pressureLowerChart"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 转速传感器 -->
+                        <div class="dual-sensor-card">
+                            <div class="dual-sensor-header">
+                                <span class="dual-sensor-title"><i class="fas fa-tachometer-alt" style="color:#fcd34d;"></i> <span data-i18n="rpmSensor">转速传感器</span></span>
+                                <div class="dual-sensor-badges">
+                                    <span class="sensor-badge" id="leftRpmStatus" data-i18n="disconnected">未连接</span>
+                                    <span class="sensor-badge" id="rightRpmStatus" data-i18n="disconnected">未连接</span>
+                                </div>
+                            </div>
+                            <div class="dual-sensor-row">
+                                <div class="dual-sensor-col">
+                                    <div class="dual-col-title"><i class="fas fa-arrow-up" style="color:#fcd34d;"></i> <span data-i18n="upperWheel">上限位轮</span></div>
+                                    <div><span class="dual-col-value" id="leftRpmValue">0.0</span><span class="dual-col-unit" id="leftRpmUnit">RPM</span></div>
+                                    <div class="dual-chart-container" id="rpmUpperChart"></div>
+                                </div>
+                                <div class="dual-sensor-col">
+                                    <div class="dual-col-title"><i class="fas fa-arrow-down" style="color:#f97316;"></i> <span data-i18n="lowerWheel">下限位轮</span></div>
+                                    <div><span class="dual-col-value" id="rightRpmValue">0.0</span><span class="dual-col-unit" id="rightRpmUnit">RPM</span></div>
+                                    <div class="dual-chart-container" id="rpmLowerChart"></div>
+                                </div>
+                            </div>
+                            <div class="switch-group">
+                                <button class="switch-btn active" data-rpm-mode="value" onclick="switchRpmMode('value')"><span data-i18n="rpm"></span></button>
+                                <button class="switch-btn" data-rpm-mode="voltage" onclick="switchRpmMode('voltage')"><span data-i18n="voltage">电压</span></button>
+                            </div>
+                        </div>
+
+                        <!-- 位移传感器 -->
+                        <div class="sensor-card">
+                            <div class="sensor-header">
+                                <span class="sensor-title"><i class="fas fa-ruler" style="color:#38bdf8;"></i> <span data-i18n="displacementSensor">位移传感器</span></span>
+                                <span class="sensor-badge" id="displacementStatus" data-i18n="disconnected">未连接</span>
+                            </div>
+                            <div class="chart-container" id="displacementChart"></div>
+                            <div class="sensor-data-row" style="margin-top: 8px;">
+                                <div class="data-item"><span data-i18n="current">当前</span>: <span id="displacementCurrent">--</span>mm</div>
+                                <div class="data-item"><span data-i18n="max">最大</span>: <span id="displacementMax">--</span>mm</div>
+                                <div class="data-item"><span data-i18n="avg">平均</span>: <span id="displacementAvg">--</span>mm</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== 监测图表页面 ==================== -->
+                <div id="chartsPage" class="page chart-page">
+                    <!-- 同轴度卡片 -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div class="chart-title"><i class="fas fa-chart-line"></i> <span data-i18n="coaxialTitle">同轴度与垂直度</span></div>
+                            <div class="chart-legend">
+                                <span class="legend-item"><span class="legend-color" style="background:#38bdf8;"></span><span data-i18n="coaxialIn">进料侧同轴度</span></span>
+                                <span class="legend-item"><span class="legend-color" style="background:#f97316;"></span><span data-i18n="verticalOut">出料侧垂直度</span></span>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper" id="coaxialChart"></div>
+                        <div class="manual-input-row">
+                            <div class="input-group">
+                                <label data-i18n="coaxialIn">同轴度:</label>
+                                <input type="number" id="coaxialIn" step="0.01" value="0.85">
+                            </div>
+                            <div class="input-group">
+                                <label data-i18n="verticalOut">垂直度:</label>
+                                <input type="number" id="verticalOut" step="0.01" value="0.78">
+                            </div>
+                            <button class="btn-small" onclick="updateCoaxialChart()">
+                                <i class="fas fa-plus"></i> <span data-i18n="add">添加</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 跳动度卡片 -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div class="chart-title"><i class="fas fa-chart-bar"></i> <span data-i18n="runoutTitle">滚轮跳动度</span></div>
+                            <div class="chart-legend">
+                                <span class="legend-item"><span class="legend-color" style="background:#ef4444;"></span><span data-i18n="wheel1">滚轮1</span></span>
+                                <span class="legend-item"><span class="legend-color" style="background:#f97316;"></span><span data-i18n="wheel2">滚轮2</span></span>
+                                <span class="legend-item"><span class="legend-color" style="background:#4ade80;"></span><span data-i18n="wheel3">滚轮3</span></span>
+                                <span class="legend-item"><span class="legend-color" style="background:#a78bfa;"></span><span data-i18n="wheel4">滚轮4</span></span>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper" id="runoutChart"></div>
+                        <div class="manual-input-row">
+                            <div class="input-group"><label data-i18n="wheel1">轮1:</label><input type="number" id="runout1" value="0.35"></div>
+                            <div class="input-group"><label data-i18n="wheel2">轮2:</label><input type="number" id="runout2" value="0.42"></div>
+                            <div class="input-group"><label data-i18n="wheel3">轮3:</label><input type="number" id="runout3" value="0.38"></div>
+                            <div class="input-group"><label data-i18n="wheel4">轮4:</label><input type="number" id="runout4" value="0.45"></div>
+                            <button class="btn-small" onclick="updateRunoutChart()"><span data-i18n="add">添加</span></button>
+                        </div>
+                    </div>
+
+                    <!-- 振动卡片 -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div class="chart-title"><i class="fas fa-heartbeat"></i> <span data-i18n="vibrationTitle">振动实时</span></div>
+                            <div class="stats-row">
+                                <span><span data-i18n="current">当前</span> <span id="vibrationCurrent">0.00</span>um</span>
+                                <span><span data-i18n="max">最大</span> <span id="vibrationMax">0.00</span>um</span>
+                                <span><span data-i18n="min">最小</span> <span id="vibrationMin">0.00</span>um</span>
+                                <span><span data-i18n="avg">平均</span> <span id="vibrationAvg">0.00</span>um</span>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper" id="vibrationChart"></div>
+                        <div style="text-align: center; margin-top: 4px;">
+                            <span class="sensor-badge" id="vibrationStatus" data-i18n="disconnected">未连接</span>
+                        </div>
+                    </div>
+
+                    <!-- 关键指标卡片 -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div class="chart-title"><i class="fas fa-chart-pie"></i> <span data-i18n="keyIndicators">关键指标</span></div>
+                        </div>
+                        <div class="key-indicators-grid">
+                            <div class="key-indicator-item">
+                                <div class="indicator-label"><i class="fas fa-thermometer-half"></i> <span data-i18n="envTemp">环境温度</span></div>
+                                <input type="number" class="indicator-input" id="chartsEnvTemp" value="25.6">
+                                <span class="indicator-unit">℃</span>
+                            </div>
+                            <div class="key-indicator-item">
+                                <div class="indicator-label"><i class="fas fa-percent"></i> <span data-i18n="contactArea">接触面积</span></div>
+                                <input type="number" class="indicator-input" id="chartsContactArea" value="92.5">
+                                <span class="indicator-unit">%</span>
+                            </div>
+                            <div class="key-indicator-item">
+                                <div class="indicator-label"><i class="fas fa-arrows-alt-h"></i> <span data-i18n="wheelGap">限位轮间距</span></div>
+                                <input type="number" class="indicator-input" id="chartsWheelGap" value="2.35">
+                                <span class="indicator-unit">mm</span>
+                            </div>
+                            <div class="key-indicator-item">
+                                <div class="indicator-label"><i class="fas fa-wave-square"></i> <span data-i18n="vibrationVal">振动值</span></div>
+                                <input type="number" class="indicator-input" id="chartsVibrationVal" value="0.18">
+                                <span class="indicator-unit">um</span>
+                            </div>
+                            <div class="key-indicator-item" style="grid-column: span 2;">
+                                <div class="indicator-label"><i class="fas fa-clock"></i> <span data-i18n="testTime">累积试机时间</span></div>
+                                <input type="number" class="indicator-input" id="chartsTestTime" value="127.5">
+                                <span class="indicator-unit">h</span>
+                            </div>
+                        </div>
+                        <button class="btn-save" onclick="saveKeyIndicatorsFromCharts()">
+                            <i class="fas fa-save"></i> <span data-i18n="save">保存</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ==================== 系统设置页面 ==================== -->
+                <div id="settingsPage" class="page">
+                    <div class="settings-container">
+                        <h2 data-i18n="systemSettings">系统设置</h2>
+
+                        <!-- 语言切换 -->
+                        <div class="settings-card">
+                            <div class="settings-title" data-i18n="language">语言</div>
+                            <div class="settings-content">
+                                <select id="langSelector">
+                                    <option value="zh" selected>中文</option>
+                                    <option value="en">English</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 基本信息卡片 -->
+                        <div class="settings-card">
+                            <div class="settings-title" data-i18n="basicInfo">基本信息</div>
+                            <div class="settings-content">
+                                <div class="param-row">
+                                    <span data-i18n="customerName">客户名称</span>
+                                    <input type="text" id="settingsCustomerName" value="XX水泥">
+                                </div>
+                                <div class="param-row">
+                                    <span data-i18n="machineNo">机台编号</span>
+                                    <input type="text" id="settingsMachineNo" value="DR-2602">
+                                </div>
+                                <div class="param-row">
+                                    <span data-i18n="orderNo">生成计单</span>
+                                    <input type="text" id="settingsOrderNo" value="PO-001">
+                                </div>
+                                <div class="param-row">
+                                    <span data-i18n="modelNo">设备型号</span>
+                                    <input type="text" id="settingsModelNo" value="V3.5.3">
+                                </div>
+                            </div>
+                            <button class="btn-save" onclick="saveBasicInfoFromSettings()">
+                                <i class="fas fa-save"></i> <span data-i18n="save">保存</span>
+                            </button>
+                        </div>
+
+                        <!-- 健康度参数设置 -->
+                        <div class="settings-card">
+                            <div class="settings-title" data-i18n="healthParams">健康度参数</div>
+                            <div class="settings-content">
+                                <h4 style="margin: 10px 0 5px; color: #f87171;" data-i18n="upperWheelTitle">上限位轮</h4>
+                                <div class="param-row">
+                                    <span data-i18n="preloadPressure">预紧力(MPa)</span>
+                                    <input type="number" id="upperPreloadPressure" step="0.1" value="2.0">
+                                </div>
+                                <div class="param-row">
+                                    <span data-i18n="criticalPressure">临界压力(MPa)</span>
+                                    <input type="number" id="upperCriticalPressure" step="0.1" value="3.5">
+                                </div>
+                                <h4 style="margin: 10px 0 5px; color: #a78bfa;" data-i18n="lowerWheelTitle">下限位轮</h4>
+                                <div class="param-row">
+                                    <span data-i18n="preloadPressure">预紧力(MPa)</span>
+                                    <input type="number" id="lowerPreloadPressure" step="0.1" value="2.0">
+                                </div>
+                                <div class="param-row">
+                                    <span data-i18n="criticalPressure">临界压力(MPa)</span>
+                                    <input type="number" id="lowerCriticalPressure" step="0.1" value="3.5">
+                                </div>
+                                <div class="param-row">
+                                    <span data-i18n="cycleSeconds">周期(秒)</span>
+                                    <input type="number" id="healthCycle" step="1" value="60">
+                                </div>
+                                <div class="param-row">
+                                    <span data-i18n="initialDisplacement">滚圈初始位移(mm)</span>
+                                    <input type="number" id="initialDisplacementInput" step="0.1" value="0.0">
+                                </div>
+                            </div>
+                            <button id="saveHealthConfig" class="btn-save">
+                                <i class="fas fa-save"></i> <span data-i18n="save">保存</span>
+                            </button>
+                        </div>
+
+                        <!-- 设备与通道配置（合并） -->
+                        <div class="settings-card">
+                            <div class="settings-title"><i class="fas fa-microchip"></i> 设备与通道配置</div>
+                            <div class="settings-content">
+                                <!-- 标签页导航 -->
+                                <div class="tabs-container">
+                                    <div class="tab active" data-tab="device">
+                                        <i class="fas fa-hdd"></i> 采集卡基本设置
+                                    </div>
+                                    <div class="tab" data-tab="ai">
+                                        <i class="fas fa-chart-line"></i> AI 通道配置
+                                    </div>
+                                    <div class="tab" data-tab="counter">
+                                        <i class="fas fa-tachometer-alt"></i> 计数器通道配置
+                                    </div>
+                                </div>
+                                
+                                <!-- 采集卡基本设置内容 -->
+                                <div id="deviceTabContent" class="tab-content active">
+                                    <div style="padding: 10px 0;">
+                                        <!-- 设备选择 -->
+                                        <div class="device-selection">
+                                            <div class="param-row">
+                                                <span>设备</span>
+                                                <select id="deviceSelector">
+                                                    <option value="">正在扫描...</option>
+                                                </select>
+                                                <button id="refreshDevicesBtn" class="btn-small" title="刷新设备列表">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                                <button id="testDeviceBtn" class="btn-small" title="测试连接">
+                                                    <i class="fas fa-plug"></i>
+                                                </button>
+                                            </div>
+                                            <div id="deviceStatus" class="device-status" style="display:none;"></div>
+                                        </div>
+
+                                        <h4 style="margin: 20px 0 15px; color: #64748b; font-size: 14px;">AI 采集参数</h4>
+                                        <div class="param-row">
+                                            <span>AI 采样频率(Hz)</span>
+                                            <input type="number" id="portAiSampleRate" step="100" value="1000">
+                                        </div>
+                                        <div class="param-row">
+                                            <span>采集频率(Hz)</span>
+                                            <input type="number" id="portSampleRate" step="100" value="1000">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- AI 通道配置内容 -->
+                                <div id="aiTabContent" class="tab-content">
+                                    <div style="padding: 10px 0;">
+                                        <div id="aiChannelContainer" class="channel-grid"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 计数器通道配置内容 -->
+                                <div id="counterTabContent" class="tab-content">
+                                    <div style="padding: 10px 0;">
+                                        <h4 style="margin: 0 0 15px; color: #64748b; font-size: 14px;">全局计数器参数</h4>
+                                        <div class="param-row">
+                                            <span>默认超时(秒)</span>
+                                            <input type="number" id="portCtrTimeout" step="0.1" value="5.0">
+                                        </div>
+                                        <div class="param-row">
+                                            <span>默认开始边沿</span>
+                                            <select id="portCtrEdge">
+                                                <option value="RISING">上升沿</option>
+                                                <option value="FALLING">下降沿</option>
+                                            </select>
+                                        </div>
+                                        <div class="param-row">
+                                            <span>默认频率单位</span>
+                                            <select id="portCtrUnits">
+                                                <option value="HZ">Hz</option>
+                                                <option value="TICKS">时钟滴答</option>
+                                            </select>
+                                        </div>
+                                        <div class="param-row">
+                                            <span>默认测量时间(秒)</span>
+                                            <input type="number" id="portCtrMeasTime" step="0.001" value="1.0">
+                                        </div>
+                                        <div class="param-row">
+                                            <span>默认最小频率(Hz)</span>
+                                            <input type="number" id="portFreqMin" step="0.1" value="0.1">
+                                        </div>
+                                        <div class="param-row">
+                                            <span>默认最大频率(Hz)</span>
+                                            <input type="number" id="portFreqMax" step="0.1" value="1000.0">
+                                        </div>
+                                        <div class="param-row">
+                                            <span>默认每转脉冲数</span>
+                                            <input type="number" id="portPulsesPerRev" step="1" value="1">
+                                        </div>
+                                        
+                                        <h4 style="margin: 25px 0 15px; color: #64748b; font-size: 14px;">各通道独立配置</h4>
+                                        <div id="ctrChannelContainer" class="channel-grid"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 保存按钮 -->
+                            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #334155;">
+                                <button id="saveAllChannelConfig" class="btn-primary btn-large">
+                                    <i class="fas fa-save"></i> 保存所有配置
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 引出线设置 -->
+                        <div class="settings-card">
+                            <div class="settings-title">引出线设置</div>
+                            <div class="settings-content">
+                                <div class="param-row">
+                                    <span>线宽</span>
+                                    <input type="range" id="lineWidthSlider" min="1" max="5" step="0.5" value="2">
+                                    <span id="lineWidthValue">2.0</span> px
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 压力映射设置 -->
+                        <div class="settings-card">
+                            <div class="settings-title">压力映射范围</div>
+                            <div class="settings-content">
+                                <div class="param-row">
+                                    <span>原始最大值</span>
+                                    <input type="number" id="pressureOriginalMax" step="0.1" value="5.0">
+                                </div>
+                                <div class="param-row">
+                                    <span>显示最大值</span>
+                                    <input type="number" id="pressureDisplayMax" step="1" value="300">
+                                </div>
+                            </div>
+                            <button id="savePressureMapping" class="btn-save">保存映射</button>
+                        </div>
+
+                        <!-- 压力单位切换 -->
+                        <div class="settings-card">
+                            <div class="settings-title">压力单位</div>
+                            <div class="settings-content">
+                                <select id="unitSelector">
+                                    <option value="MPa">MPa</option>
+                                    <option value="N">N</option>
+                                    <option value="kN">kN</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== 数据管理页面 ==================== -->
+                <div id="dataPage" class="page">
+                    <div class="settings-container">
+                        <div class="settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2 style="color: #f1f5f9; margin: 0; font-size: 20px;">
+                                <i class="fas fa-database" style="color: #38bdf8; margin-right: 10px;"></i>
+                                数据管理
+                            </h2>
+                            <button onclick="refreshDataRecords()" class="btn-primary" style="padding: 8px 16px; font-size: 13px;">
+                                <i class="fas fa-sync"></i> 刷新
+                            </button>
+                        </div>
+                        
+                        <div id="dataRecordsContainer">
+                            <!-- 数据记录列表将在这里渲染 -->
+                            <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 48px; margin-bottom: 16px;"></i>
+                                <p>加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- standardApp 结束 -->
+
+    <!-- ==================== 沉浸式视图容器 ==================== -->
+    <div id="immersiveApp" class="immersive-view" style="display: none; position: relative; width: 100%; height: 100%; min-height: 800px;">
+        
+        <div class="immersive-hud-top">
+            <div class="hud-status">
+                <i class="fas fa-circle text-green-400"></i> 系统就绪
+            </div>
+            <div class="hud-controls">
+                <button class="immersive-btn" id="immersiveExitBtn"><i class="fas fa-times"></i> 退出</button>
+                <button class="immersive-btn" id="immersiveStartBtn"><i class="fas fa-play"></i> 开始</button>
+                <button class="immersive-btn" id="immersiveSaveBtn"><i class="fas fa-satellite-dish"></i> 采集</button>
+                <button class="immersive-btn" id="immersiveStopBtn"><i class="fas fa-stop"></i> 结束</button>
+            </div>
+        </div>
+
+        <div class="immersive-radial-menu">
+            <div class="radial-item active" data-target="home"><i class="fas fa-home"></i><br>主页</div>
+            <div class="radial-item" data-target="charts"><i class="fas fa-chart-pie"></i><br>分析</div>
+            <div class="radial-item" data-target="data"><i class="fas fa-database"></i><br>数据</div>
+            <div class="radial-item" data-target="motor"><i class="fas fa-bolt"></i><br>电机</div>
+            <div class="radial-item" data-target="settings"><i class="fas fa-cog"></i><br>系统</div>
+        </div>
+
+        <div class="digital-twin-container" style="width: 100%; height: 100%;">
+            <div class="ambient-light"></div>
+
+            <div class="health-halo-glow" id="immersiveHaloGlow"></div>
+            <div class="health-halo-container" id="immersiveHaloOuter">
+                <div class="health-progress-ring" id="immersiveHealthProgress"></div>
+                <div class="health-halo-inner" id="immersiveHaloInner1"></div>
+                <div class="health-halo-outer" id="immersiveHaloInner2"></div>
+            </div>
+
+            <div class="health-score-hud" id="immersiveScoreHud">
+                <div class="score" id="immersiveHealthScore">85%</div>
+                <div class="label">SYSTEM HEALTH</div>
+            </div>
+
+            <div class="main-drum-wrapper" id="immersiveMainDrum">
+                                <img class="drum-img" src="/static/images/output_drum/RT300B.ZT_01.PNG" alt="整体滚筒">
+                            </div>
+
+                            <div class="detail-components-group" id="immersiveComponentsGroup">
+                <div class="components-glow"></div>
+                
+                <svg class="hud-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                        <marker id="dotRed" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4">
+                            <circle cx="5" cy="5" r="4" fill="#f87171" filter="drop-shadow(0 0 2px #f87171)" />
+                        </marker>
+                        <marker id="dotBlue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4">
+                            <circle cx="5" cy="5" r="4" fill="#38bdf8" filter="drop-shadow(0 0 2px #38bdf8)" />
+                        </marker>
+                        <marker id="immersiveDotRed" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4">
+                            <circle cx="5" cy="5" r="4" fill="#f87171" filter="drop-shadow(0 0 2px #f87171)" />
+                        </marker>
+                        <marker id="immersiveDotBlue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4">
+                            <circle cx="5" cy="5" r="4" fill="#38bdf8" filter="drop-shadow(0 0 2px #38bdf8)" />
+                        </marker>
+                    </defs>
+                    <path id="immersiveSvgLineLeft" fill="none" stroke-width="0.3" marker-start="url(#immersiveDotRed)"/>
+                    <path id="immersiveSvgLineRight" fill="none" stroke-width="0.3" marker-start="url(#immersiveDotBlue)"/>
+                </svg>
+
+                <img class="detail-ring" id="immersiveDetailRing" src="/static/images/gq-11.png" alt="滚圈">
+                <div class="part-label ring" id="immersiveLabelRing">
+                    <div class="part-name">主滚圈 (MAIN RING)</div>
+                    <div class="part-speed" id="immersiveRingSpeed">0.0<span>RPM</span></div>
+                </div>
+
+                <img class="detail-wheel left" src="/static/images/0.png" alt="上限位轮">
+                <div class="part-label wheel-left">
+                    <div class="part-name">上限位轮</div>
+                    <div class="part-speed" id="immersiveLeftWheelSpeed">0.0<span>RPM</span></div>
+                </div>
+
+                <img class="detail-wheel right" src="/static/images/0.png" alt="下限位轮">
+                <div class="part-label wheel-right">
+                    <div class="part-name">下限位轮</div>
+                    <div class="part-speed" id="immersiveRightWheelSpeed">0.0<span>RPM</span></div>
+                </div>
+
+                <div class="dynamic-indicator ind-left" id="immersiveIndLeft"></div>
+                <div class="dynamic-indicator ind-right" id="immersiveIndRight"></div>
+            </div>
+
+            <div class="bottom-hud-container" id="immersiveBottomCharts" style="transition: opacity 0.8s;">
+                <div class="hud-chart-panel">
+                    <div class="hud-title">FAULT EVENTS</div>
+                    <div id="immersiveFaultChart" class="chart-box"></div>
+                </div>
+                <div class="hud-chart-panel">
+                    <div class="hud-title">VIBRATION</div>
+                    <div id="immersiveVibrationChart" class="chart-box"></div>
+                </div>
+                <div class="hud-chart-panel">
+                    <div class="hud-title">HEALTH TREND</div>
+                    <div id="immersiveTrendChart" class="chart-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 全息面板 -->
+        <div id="immersiveHoloPanel" class="holo-panel" style="display: none;">
+            <div class="holo-panel-header">
+                <h3 id="holoPanelTitle">全息数据中心</h3>
+                <button class="holo-close-btn" onclick="document.getElementById('immersiveHoloPanel').style.display='none'"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="holo-panel-content" id="holoPanelContent">
+                <!-- 动态内容注入区域 -->
+            </div>
+        </div>
+    </div>
+
+    <div class="release-notes-modal" id="releaseNotesModal" hidden>
+        <div class="release-notes-dialog">
+            <div class="release-notes-header">
+                <div>
+                    <div class="release-notes-badge">版本更新</div>
+                    <h3 id="releaseNotesTitle">传感监测平台</h3>
+                </div>
+                <button id="releaseNotesCloseBtn" type="button" class="release-notes-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="release-notes-meta" id="releaseNotesMeta"></div>
+            <ul class="release-notes-list" id="releaseNotesList"></ul>
+            <div class="release-history-list" id="releaseHistoryList"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/immersive-view.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotary Drum Digital Twin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="/static/js/echarts.min.js"></script>
+    <script src="/static/js/socket.io.min.js"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer@3.3.0/dist/model-viewer.min.js"></script>
+
+    <style>
+        body {
+            background-color: #09090b; /* zinc-950 */
+            color: #f4f4f5; /* zinc-50 */
+            overflow: hidden;
+        }
+        
+        /* Modern scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46; /* zinc-700 */
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b; /* zinc-600 */
+        }
+
+        .panel {
+            background: rgba(24, 24, 27, 0.7); /* zinc-900 with opacity */
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(63, 63, 70, 0.5); /* zinc-700 */
+            border-radius: 8px;
+        }
+        
+        #progress-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate3d(-50%, -50%, 0);
+            width: 33%;
+            text-align: center;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            display: block;
+            width: 100%;
+            height: 4px;
+            max-height: 4px;
+            border-radius: 4px;
+            box-shadow: 0px 3px 10px 3px rgba(0, 0, 0, 0.5), 0px 0px 5px 1px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .update-bar {
+            background-color: #38bdf8;
+            width: 0%;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        #loading-text {
+            color: #38bdf8;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        /* We no longer use .hide class, handled via JS inline styles */
+
+        .Hotspot {
+            background: rgba(14, 165, 233, 0.1); /* sky-500 */
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+        }
+        .Hotspot:hover {
+            background: rgba(14, 165, 233, 0.3);
+            transform: scale(1.1);
+        }
+        .Hotspot:after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px; height: 6px;
+            background: #0ea5e9;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #0ea5e9, 0 0 20px #0ea5e9;
+        }
+        .Hotspot[title]:before {
+            content: attr(title);
+            position: absolute;
+            left: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(9, 9, 11, 0.8);
+            color: #38bdf8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            pointer-events: none;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col font-sans selection:bg-sky-500/30">
+
+    <!-- 3D Background -->
+    <div class="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_#18181b_0%,_#09090b_100%)]">
+        <model-viewer 
+            id="product-model"
+            data-draco-src="/static/models/model.glb"
+            data-no-draco-src="/static/models/model.glb"
+            alt="Rotary Drum Model"
+            shadow-intensity="2.05"
+            exposure="1.16"
+            environment-image="neutral"
+            interpolation-decay="200"
+            camera-orbit="45deg 75deg 105%"
+            style="width: 100vw; height: 100vh; outline: none;">
+            
+            <div id="progress-container" slot="progress-bar">
+                <div id="loading-text">正在准备 3D 模型加载... 0%</div>
+                <div class="progress-bar">
+                    <div class="update-bar"></div>
+                </div>
+            </div>
+            
+            <!-- Global Hotspots -->
+            <button class="Hotspot" slot="hotspot-compression" data-position="1530 254 0" data-normal="0 1 0" title="Compression System (Thrust)"></button>
+            <button class="Hotspot" slot="hotspot-motor" data-position="3389 259 0" data-normal="1 0 0" title="Motor System"></button>
+
+            <!-- Detailed Sensor Hotspots (Updated coordinates for CTS_0724.glb) -->
+            <button class="Hotspot" slot="hotspot-upper-press" data-position="1802 182 0" data-normal="0 1 0" title="Upper Pressure (上压力)"></button>
+            <button class="Hotspot" slot="hotspot-lower-press" data-position="1257 182 0" data-normal="0 -1 0" title="Lower Pressure (下压力)"></button>
+            <button class="Hotspot" slot="hotspot-upper-rpm" data-position="1690 200 -121" data-normal="0 1 0" title="Upper RPM (上转速)"></button>
+            <button class="Hotspot" slot="hotspot-lower-rpm" data-position="1370 200 -121" data-normal="0 -1 0" title="Lower RPM (下转速)"></button>
+            <button class="Hotspot" slot="hotspot-displacement" data-position="1430 232 174" data-normal="0 0 1" title="Displacement (位移)"></button>
+            
+            <button class="Hotspot" slot="hotspot-motor-1" data-position="1036 182 431" data-normal="1 0 0" title="Motor 1"></button>
+            <button class="Hotspot" slot="hotspot-motor-2" data-position="1036 181 -431" data-normal="1 0 0" title="Motor 2"></button>
+            <button class="Hotspot" slot="hotspot-motor-3" data-position="5744 182 -431" data-normal="1 0 0" title="Motor 3"></button>
+            <button class="Hotspot" slot="hotspot-motor-4" data-position="5743 181 431" data-normal="1 0 0" title="Motor 4"></button>
+        </model-viewer>
+    </div>
+
+    <!-- UI Overlay -->
+    <div class="relative z-10 w-full h-full flex flex-col pointer-events-none p-4 gap-4">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center pointer-events-auto panel px-4 py-3 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                    <i class="ph-fill ph-cube text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-semibold text-zinc-100 leading-tight">Digital Twin</h1>
+                    <div class="flex items-center gap-2 text-xs font-mono text-zinc-400 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="clock">00:00:00</span>
+                        <span class="text-zinc-600">|</span>
+                        <span>Uptime: <span id="uptime" class="text-zinc-300">00:00:00</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <div class="flex bg-zinc-950/50 p-1 rounded border border-zinc-800">
+                    <button class="nav-btn px-3 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-100 data-[active=true]:bg-zinc-800 data-[active=true]:text-zinc-100 transition-colors" data-view="global" data-active="true">Global</button>
+                    <button class="nav-btn px-3 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-100 data-[active=true]:bg-zinc-800 data-[active=true]:text-zinc-100 transition-colors" data-view="pressure">Pressure</button>
+                    <button class="nav-btn px-3 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-100 data-[active=true]:bg-zinc-800 data-[active=true]:text-zinc-100 transition-colors" data-view="rpm">RPM</button>
+                    <button class="nav-btn px-3 py-1 rounded text-xs font-medium text-zinc-400 hover:text-zinc-100 data-[active=true]:bg-zinc-800 data-[active=true]:text-zinc-100 transition-colors" data-view="motor">Motors</button>
+                </div>
+                <!-- Mock Data Toggle -->
+                <button id="btn-mock-data" class="flex items-center gap-2 px-3 py-1.5 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-xs font-medium text-indigo-400 border border-indigo-500/30 transition-colors">
+                    <i class="ph ph-magic-wand"></i> Mock Data
+                </button>
+                <a href="/" class="flex items-center gap-2 px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-100 transition-colors">
+                    <i class="ph ph-arrow-left"></i> 2D Console
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="flex-1 w-full flex gap-4 min-h-0">
+            
+            <!-- Left Panel: System Health & Fault Log -->
+            <aside class="w-[380px] flex flex-col gap-4 pointer-events-auto shrink-0 overflow-y-auto">
+                
+                <!-- System Health -->
+                <div class="panel p-4 flex flex-col gap-3">
+                    <div class="flex items-center gap-2 text-sm font-medium text-zinc-300">
+                        <i class="ph ph-heartbeat text-emerald-400"></i> System Health
+                    </div>
+                    <div class="flex items-baseline justify-between">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-4xl font-mono font-semibold text-zinc-100 tabular-nums" id="sys-health-val">--</span>
+                            <span class="text-sm text-zinc-500">%</span>
+                        </div>
+                        <span class="text-xs font-medium text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20" id="sys-health-status">OPTIMAL</span>
+                    </div>
+                    <!-- Health Intervals Legend -->
+                    <div class="mt-5 flex flex-col gap-2">
+                        <div class="flex justify-between text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+                            <span>Critical</span>
+                            <span>Poor</span>
+                            <span>Good</span>
+                            <span>Optimal</span>
+                        </div>
+                        <div class="h-1.5 w-full rounded-full flex overflow-hidden">
+                            <div class="h-full bg-rose-500" style="width: 40%"></div>
+                            <div class="h-full bg-amber-500" style="width: 20%"></div>
+                            <div class="h-full bg-sky-500" style="width: 20%"></div>
+                            <div class="h-full bg-emerald-500" style="width: 20%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] font-mono text-zinc-500 mt-0.5">
+                            <span>0</span>
+                            <span>40</span>
+                            <span>60</span>
+                            <span>80</span>
+                            <span>100</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Trend -->
+                <div class="panel p-4 flex flex-col flex-1 min-h-0">
+                    <div class="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-2">
+                        <i class="ph ph-trend-up text-sky-400"></i> Health Trend
+                    </div>
+                    <div id="health-trend-chart" class="w-full flex-1 min-h-0"></div>
+                </div>
+
+                <!-- Fault Log -->
+                <div class="panel p-4 flex flex-col h-64 shrink-0">
+                    <div class="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-3">
+                        <i class="ph ph-warning-circle text-amber-500"></i> Fault Log
+                    </div>
+                    <div class="w-full flex-1 overflow-y-auto pr-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-xs text-zinc-500 border-b border-zinc-800">
+                                    <th class="pb-2 font-medium">Time</th>
+                                    <th class="pb-2 font-medium">Component</th>
+                                    <th class="pb-2 font-medium">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fault-info-tbody" class="text-xs text-zinc-300 divide-y divide-zinc-800/50">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Center: Bottom Waveform Chart -->
+            <section class="flex-1 flex flex-col justify-end pointer-events-none pb-0">
+                <div class="panel p-4 h-64 flex flex-col pointer-events-auto">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-2 text-sm font-medium text-zinc-300">
+                            <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                            Telemetry Stream
+                        </div>
+                        <button id="btn-reset-view" class="hidden text-[10px] px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors">
+                            <i class="ph ph-arrows-in"></i> Reset View
+                        </button>
+                    </div>
+                    <div id="sensor-chart" class="w-full flex-1 min-h-0"></div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Live Metrics -->
+            <aside class="w-72 flex flex-col gap-3 pointer-events-auto shrink-0 justify-end pb-4">
+                
+                <!-- Pressure -->
+                <div class="panel p-3 flex flex-col gap-1 cursor-pointer hover:border-sky-500/50 transition-colors" onclick="switchView('pressure')">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2 text-sm font-medium text-zinc-300">
+                            <i class="ph ph-gauge text-zinc-400"></i> Pressure (MPa)
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded hover:bg-zinc-800 transition-colors">
+                        <span class="text-xs text-zinc-400">Upper (上压力)</span>
+                        <span class="text-xl font-mono font-semibold text-zinc-100 tabular-nums" id="val-press-up">--</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded hover:bg-zinc-800 transition-colors">
+                        <span class="text-xs text-zinc-400">Lower (下压力)</span>
+                        <span class="text-xl font-mono font-semibold text-zinc-100 tabular-nums" id="val-press-down">--</span>
+                    </div>
+                </div>
+
+                <!-- Thrust Heatmap Status -->
+                <div class="panel p-3 flex flex-col gap-2 border border-sky-500/20 bg-sky-500/5">
+                    <div class="flex items-center gap-2 text-sm font-medium text-zinc-200">
+                        <i class="ph ph-fire text-sky-400"></i> 限位轮受力热力
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="rounded bg-zinc-800/60 p-2">
+                            <div class="text-zinc-500">上限位轮</div>
+                            <div id="heatmap-upper-status" class="mt-1 text-zinc-100">未接触</div>
+                            <div id="heatmap-upper-level" class="text-zinc-500">无</div>
+                            <div id="heatmap-upper-value" class="mt-1 font-mono text-[10px] text-zinc-400">0.00</div>
+                        </div>
+                        <div class="rounded bg-zinc-800/60 p-2">
+                            <div class="text-zinc-500">下限位轮</div>
+                            <div id="heatmap-lower-status" class="mt-1 text-zinc-100">未接触</div>
+                            <div id="heatmap-lower-level" class="text-zinc-500">无</div>
+                            <div id="heatmap-lower-value" class="mt-1 font-mono text-[10px] text-zinc-400">0.00</div>
+                        </div>
+                    </div>
+                    <div id="heatmap-legend" class="rounded bg-zinc-900/80 px-2 py-1 text-[10px] text-zinc-400">
+                        深蓝到青绿表示受力较低，黄色到橙红表示受力升高；对应侧存在转速时，限位轮与接触滚圈同步显示热力。
+                    </div>
+                </div>
+
+                <!-- RPM -->
+                <div class="panel p-3 flex flex-col gap-1 cursor-pointer hover:border-emerald-500/50 transition-colors" onclick="switchView('rpm')">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2 text-sm font-medium text-zinc-300">
+                            <i class="ph ph-engine text-zinc-400"></i> Speed (RPM)
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded hover:bg-zinc-800 transition-colors">
+                        <span class="text-xs text-zinc-400">Upper (上转速)</span>
+                        <span class="text-xl font-mono font-semibold text-zinc-100 tabular-nums" id="val-rpm-up">--</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded hover:bg-zinc-800 transition-colors">
+                        <span class="text-xs text-zinc-400">Lower (下转速)</span>
+                        <span class="text-xl font-mono font-semibold text-zinc-100 tabular-nums" id="val-rpm-down">--</span>
+                    </div>
+                </div>
+
+                <!-- Displacement -->
+                <div class="panel p-3 flex flex-col gap-1">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2 text-sm font-medium text-zinc-300">
+                            <i class="ph ph-arrows-out-line-horizontal text-sky-400"></i> Displacement (mm)
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded hover:bg-zinc-800 transition-colors">
+                        <span class="text-xs text-zinc-400">Ring (滚圈位移)</span>
+                        <span class="text-xl font-mono font-semibold text-zinc-100 tabular-nums" id="val-displacement">--</span>
+                    </div>
+                </div>
+
+                <!-- Motor Current -->
+                <div class="panel p-3 flex flex-col gap-1 cursor-pointer hover:border-rose-500/50 transition-colors" onclick="switchView('motor')">
+                    <div class="flex justify-between items-center mb-1">
+                        <div class="flex items-center gap-2 text-sm font-medium text-zinc-300">
+                            <i class="ph ph-lightning text-rose-400"></i> Motors (A)
+                        </div>
+                        <i class="ph ph-caret-right text-zinc-500"></i>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex justify-between items-center p-2 rounded bg-zinc-800/50">
+                            <span class="text-xs text-zinc-500">M1</span>
+                            <span class="text-sm font-mono font-semibold text-zinc-100 tabular-nums" id="val-motor-1">--</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded bg-zinc-800/50">
+                            <span class="text-xs text-zinc-500">M2</span>
+                            <span class="text-sm font-mono font-semibold text-zinc-100 tabular-nums" id="val-motor-2">--</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded bg-zinc-800/50">
+                            <span class="text-xs text-zinc-500">M3</span>
+                            <span class="text-sm font-mono font-semibold text-zinc-100 tabular-nums" id="val-motor-3">--</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 rounded bg-zinc-800/50">
+                            <span class="text-xs text-zinc-500">M4</span>
+                            <span class="text-sm font-mono font-semibold text-zinc-100 tabular-nums" id="val-motor-4">--</span>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+        </main>
+    </div>
+
+    <script type="module" src="/static/js/3d_view.js?v=2026073104"></script>
+</body>
+</html>
