@@ -1,0 +1,28 @@
+{
+  "version": "1.0.2",
+  "release_date": "2026-06-10",
+  "release_notes": [
+    "修复了 Modbus RS485 设备兼容性问题",
+    "优化了主页界面的动画性能"
+  ],
+  "history": [
+    {
+      "version": "1.0.1",
+      "release_date": "2026-06-10",
+      "release_notes": [
+        "新增版本更新记录与升级后首次启动提示",
+        "首页增加手动查看版本记录入口",
+        "安装打包流程改为从统一版本文件同步安装包版本号"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "release_date": "2026-06-08",
+      "release_notes": [
+        "完成桌面版打包和 Inno Setup 安装包发布流程",
+        "增加 WebView2 运行时检测与安装前提示",
+        "首页支持进入 Modbus 模块"
+      ]
+    }
+  ]
+}
