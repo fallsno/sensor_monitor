@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统主页沉浸式数字孪生预览 V11</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #050b14;
+            color: #f1f5f9;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .digital-twin-container {
+            position: relative;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #111827 0%, #050b14 100%);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .ambient-light {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle at 50% 30%, rgba(56,189,248,0.05) 0%, transparent 50%);
+        }
+
+        /* ================= 大光环：健康度仪表盘 ================= */
+        .health-halo-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 75vmin; height: 75vmin; border-radius: 50%;
+            border: 2px dashed rgba(74, 222, 128, 0.2);
+            box-shadow: 0 0 150px rgba(74, 222, 128, 0.15) inset;
+            z-index: 1; pointer-events: none;
+            transition: border-color 0.8s ease, box-shadow 0.8s ease;
+        }
+        .health-halo-inner {
+            position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; border-radius: 50%;
+            border: 2px solid rgba(74, 222, 128, 0.2); border-left: 3px solid transparent; border-right: 3px solid transparent;
+            animation: rotate-halo-reverse 20s linear infinite; transition: border-color 0.8s ease;
+        }
+        .health-halo-outer {
+            position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; border-radius: 50%;
+            border: 1px solid rgba(74, 222, 128, 0.1); border-top: 2px solid transparent;
+            animation: rotate-halo 45s linear infinite; transition: border-color 0.8s ease;
+        }
+        .health-progress-ring {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%;
+            background: conic-gradient(from 225deg, #4ade80 0deg, transparent 0deg);
+            -webkit-mask: radial-gradient(transparent 68%, black 69%);
+            mask: radial-gradient(transparent 68%, black 69%);
+            z-index: 2; opacity: 0.8; transition: background 0.8s ease;
+        }
+        .health-halo-glow {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90vmin; height: 90vmin; border-radius: 50%;
+            background: radial-gradient(circle, rgba(74, 222, 128, 0.05) 0%, transparent 70%);
+            z-index: 0; pointer-events: none; transition: background 0.8s ease;
+        }
+
+        @keyframes rotate-halo { 100% { transform: rotate(360deg); } }
+        @keyframes rotate-halo-reverse { 100% { transform: rotate(-360deg); } }
+
+        /* 顶部健康度分数 */
+        .health-score-hud {
+            position: absolute; top: calc(50% - 37.5vmin - 60px); left: 50%; transform: translateX(-50%);
+            text-align: center; z-index: 100; pointer-events: none; display: flex; flex-direction: column; align-items: center;
+        }
+        .health-score-hud .score { 
+            font-size: 52px; font-weight: bold; color: #4ade80; text-shadow: 0 0 20px rgba(74,222,128,0.5); 
+            font-family: monospace; transition: color 0.5s ease; line-height: 1;
+        }
+        .health-score-hud .label { font-size: 13px; color: #94a3b8; letter-spacing: 4px; margin-top: 4px; }
+        .health-score-hud::after { content: ''; display: block; width: 2px; height: 20px; background: currentColor; margin-top: 5px; opacity: 0.5; }
+
+        /* ================= 中心：整体滚筒 ================= */
+        .main-drum-wrapper {
+            position: absolute; width: 60%; height: 60%; top: 40%; left: 50%;
+            transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center;
+            z-index: 5; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .main-drum-wrapper.shifted { width: 45%; height: 45%; left: 28%; }
+        .drum-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.8)); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .main-drum-wrapper.shifted .drum-img { filter: drop-shadow(0 20px 40px rgba(0,0,0,0.8)) brightness(0.5); }
+
+        .hotspot-area {
+            position: absolute; top: 35%; left: 45%; width: 10%; height: 20%;
+            border-radius: 50%; background: radial-gradient(circle, rgba(56, 189, 248, 0.4) 0%, transparent 70%);
+            cursor: pointer; z-index: 10; animation: pulse-hotspot 2s infinite;
+        }
+        @keyframes pulse-hotspot { 0% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 0.5; } }
+
+        /* ================= 右侧：核心部件细节 ================= */
+        .detail-components-group {
+            position: absolute; top: 40%; right: 2%; transform: translateY(-50%) translateX(150px) scale(0.6);
+            width: 45vw; height: 60vh; z-index: 20; opacity: 0; visibility: hidden;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .detail-components-group.visible { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(0) scale(1); }
+
+        /* --- 部件图像 --- */
+        .detail-ring {
+            position: absolute; top: 30%; left: 35%; width: 30%; height: 60%; object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(249, 115, 22, 0.3)); z-index: 2;
+        }
+        .detail-wheel { position: absolute; width: 22%; height: 30%; object-fit: contain; z-index: 2; }
+        .detail-wheel.left { top: 60%; left: 15%; filter: drop-shadow(0 0 15px rgba(248, 113, 113, 0.3)); }
+        .detail-wheel.right { top: 60%; right: 15%; filter: drop-shadow(0 0 15px rgba(167, 139, 250, 0.3)); }
+
+        /* ================= 部件文本标签 (重新布局) ================= */
+        .part-label { position: absolute; z-index: 30; pointer-events: none; text-align: center; }
+        .part-name { font-size: 13px; color: #f1f5f9; font-weight: bold; letter-spacing: 1px; text-shadow: 0 2px 4px #000; }
+        .part-speed { font-size: 16px; color: #38bdf8; font-family: monospace; font-weight: bold; text-shadow: 0 2px 4px #000; margin-top: 2px; }
+        .part-speed span { font-size: 10px; color: #94a3b8; margin-left: 2px; }
+
+        /* 滚圈标签：正上方，通过 JS 跟随移动 */
+        .part-label.ring { top: 15%; left: 50%; transform: translateX(-50%); }
+        .part-label.ring .part-speed { color: #f97316; }
+        
+        /* 限位轮标签：限位轮的正上方 (Y 轴靠上，不遮挡图片) */
+        .part-label.wheel-left { top: 48%; left: 26%; transform: translateX(-50%); }
+        .part-label.wheel-left .part-speed { color: #f87171; }
+        
+        .part-label.wheel-right { top: 48%; right: 26%; transform: translateX(50%); }
+        .part-label.wheel-right .part-speed { color: #a78bfa; }
+
+        /* 间隙与压力文本框：移到底部靠外侧 */
+        .dynamic-indicator {
+            position: absolute; z-index: 30; display: flex; flex-direction: column; pointer-events: none;
+        }
+        .dynamic-indicator.ind-left { bottom: -5%; left: 0%; align-items: flex-start; text-align: left; }
+        .dynamic-indicator.ind-right { bottom: -5%; right: 0%; align-items: flex-end; text-align: right; }
+        
+        .ind-val { font-size: 20px; font-weight: bold; font-family: monospace; }
+        .ind-val.pressure { color: #f87171; text-shadow: 0 0 10px rgba(248,113,113,0.8); }
+        .ind-val.gap { color: #38bdf8; text-shadow: 0 0 10px rgba(56,189,248,0.8); }
+        .ind-name { font-size: 10px; color: #94a3b8; letter-spacing: 1px; }
+
+        /* ================= SVG 动态追踪引线 (绕行限位轮) ================= */
+        .hud-svg-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 25; pointer-events: none;
+        }
+
+        /* ================= 底部三图表布局 ================= */
+        .bottom-hud-container {
+            position: absolute; bottom: 2%; left: 0; width: 100%; height: 25vh;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            padding: 0 4vw; gap: 3vw; z-index: 30; pointer-events: none;
+        }
+        .hud-chart-panel { flex: 1; height: 100%; display: flex; flex-direction: column; pointer-events: auto; }
+        .hud-title {
+            font-size: 12px; color: #94a3b8; letter-spacing: 1.5px; margin-bottom: 5px; text-transform: uppercase;
+            display: flex; align-items: center; gap: 8px; padding-left: 5px;
+        }
+        .hud-title::before { content: ''; display: block; width: 4px; height: 12px; background: #38bdf8; }
+        .chart-box { width: 100%; flex: 1; }
+
+    </style>
+</head>
+<body>
+    
+    <div class="digital-twin-container">
+        <div class="ambient-light"></div>
+
+        <div class="health-halo-glow" id="haloGlow"></div>
+        <div class="health-halo-container" id="haloOuter">
+            <div class="health-progress-ring" id="healthProgress"></div>
+            <div class="health-halo-inner" id="haloInner1"></div>
+            <div class="health-halo-outer" id="haloInner2"></div>
+        </div>
+
+        <div class="health-score-hud" id="scoreHud">
+            <div class="score" id="healthScore">85%</div>
+            <div class="label">SYSTEM HEALTH</div>
+        </div>
+
+        <div class="main-drum-wrapper" id="mainDrum">
+            <img class="drum-img" src="./static/images/output_drum/RT300B.ZT_01.PNG" alt="整体滚筒">
+        </div>
+
+        <div class="hotspot-area" id="hotspot"></div>
+
+        <div class="detail-components-group" id="componentsGroup">
+            <div class="components-glow"></div>
+            
+            <svg class="hud-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <defs>
+                    <marker id="dotRed" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4">
+                        <circle cx="5" cy="5" r="4" fill="#f87171" filter="drop-shadow(0 0 2px #f87171)" />
+                    </marker>
+                    <marker id="dotBlue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4">
+                        <circle cx="5" cy="5" r="4" fill="#38bdf8" filter="drop-shadow(0 0 2px #38bdf8)" />
+                    </marker>
+                </defs>
+                <!-- 引线路径 -->
+                <path id="svgLineLeft" fill="none" stroke-width="0.3" marker-end="url(#dotRed)"/>
+                <path id="svgLineRight" fill="none" stroke-width="0.3" marker-end="url(#dotBlue)"/>
+            </svg>
+
+            <!-- 滚圈图片与跟随标签 -->
+            <img class="detail-ring" id="detailRing" src="./static/images/gq-11.png" alt="滚圈">
+            <div class="part-label ring" id="labelRing">
+                <div class="part-name">主滚圈 (MAIN RING)</div>
+                <div class="part-speed">6.6<span>RPM</span></div>
+            </div>
+
+            <!-- 左限位轮图片与上方标签 -->
+            <img class="detail-wheel left" src="./static/images/0.png" alt="上限位轮">
+            <div class="part-label wheel-left">
+                <div class="part-name">左限位轮</div>
+                <div class="part-speed">45.2<span>RPM</span></div>
+            </div>
+
+            <!-- 右限位轮图片与上方标签 -->
+            <img class="detail-wheel right" src="./static/images/0.png" alt="下限位轮">
+            <div class="part-label wheel-right">
+                <div class="part-name">右限位轮</div>
+                <div class="part-speed">45.0<span>RPM</span></div>
+            </div>
+
+            <div class="dynamic-indicator ind-left" id="indLeft"></div>
+            <div class="dynamic-indicator ind-right" id="indRight"></div>
+            
+        </div>
+
+        <div class="bottom-hud-container">
+            <div class="hud-chart-panel">
+                <div class="hud-title">FAULT EVENTS</div>
+                <div id="faultChart" class="chart-box"></div>
+            </div>
+            <div class="hud-chart-panel">
+                <div class="hud-title">VIBRATION</div>
+                <div id="vibrationChart" class="chart-box"></div>
+            </div>
+            <div class="hud-chart-panel">
+                <div class="hud-title">HEALTH TREND</div>
+                <div id="trendChart" class="chart-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const mainDrum = document.getElementById('mainDrum');
+            const componentsGroup = document.getElementById('componentsGroup');
+            const hotspot = document.getElementById('hotspot');
+            const detailRing = document.getElementById('detailRing');
+            const labelRing = document.getElementById('labelRing');
+            const indLeft = document.getElementById('indLeft');
+            const indRight = document.getElementById('indRight');
+            const healthScoreEl = document.getElementById('healthScore');
+            const scoreHud = document.getElementById('scoreHud');
+            
+            const haloGlow = document.getElementById('haloGlow');
+            const haloOuter = document.getElementById('haloOuter');
+            const haloInner1 = document.getElementById('haloInner1');
+            const haloInner2 = document.getElementById('haloInner2');
+            const healthProgress = document.getElementById('healthProgress');
+
+            const svgLineLeft = document.getElementById('svgLineLeft');
+            const svgLineRight = document.getElementById('svgLineRight');
+
+            let isComponentsVisible = false;
+            hotspot.addEventListener('click', () => {
+                isComponentsVisible = !isComponentsVisible;
+                if(isComponentsVisible) {
+                    mainDrum.classList.add('shifted');
+                    componentsGroup.classList.add('visible');
+                } else {
+                    mainDrum.classList.remove('shifted');
+                    componentsGroup.classList.remove('visible');
+                }
+            });
+
+            let timeData = (function (){
+                let now = new Date(); let res = [];
+                for (let i = 0; i < 30; i++) { res.unshift(now.toLocaleTimeString('en-US', {hour12: false}).replace(/^\d{2}:/, '')); now = new Date(now - 2000); }
+                return res;
+            })();
+
+            const commonChartOptions = {
+                backgroundColor: 'transparent', grid: { top: 15, bottom: 20, left: 30, right: 10 },
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(15,23,42,0.8)', borderColor: '#334155', textStyle: { color: '#f1f5f9' } },
+                xAxis: { type: 'category', boundaryGap: false, data: timeData, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }, axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 10 } },
+                yAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } }, axisLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 10 } }
+            };
+
+            const faultChart = echarts.init(document.getElementById('faultChart'));
+            let faultData = Array.from({length: 30}, () => Math.random() * 5); 
+            faultChart.setOption({ ...commonChartOptions, series: [{ data: faultData, type: 'line', smooth: true, symbol: 'none', lineStyle: { color: '#f87171', width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(248,113,113,0.3)'}, {offset: 1, color: 'rgba(248,113,113,0)'}]) } }] });
+
+            const vibrationChart = echarts.init(document.getElementById('vibrationChart'));
+            let vibData = Array.from({length: 30}, () => 2.0 + Math.random() * 0.8);
+            vibrationChart.setOption({ ...commonChartOptions, yAxis: { ...commonChartOptions.yAxis, min: 1.0, max: 4.0 }, series: [{ data: vibData, type: 'line', smooth: false, symbol: 'none', lineStyle: { color: '#38bdf8', width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(56,189,248,0.3)'}, {offset: 1, color: 'rgba(56,189,248,0)'}]) } }] });
+
+            const trendChart = echarts.init(document.getElementById('trendChart'));
+            let trendData = Array.from({length: 30}, () => 85);
+            trendChart.setOption({ ...commonChartOptions, yAxis: { ...commonChartOptions.yAxis, min: 40, max: 100 }, series: [{ data: trendData, type: 'line', smooth: true, symbol: 'none', lineStyle: { color: '#4ade80', width: 2 }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(74,222,128,0.3)'}, {offset: 1, color: 'rgba(74,222,128,0)'}]) } }] });
+            
+            let currentHealth = 85; let time = 0;
+
+            function updateDataLogic() {
+                const nowStr = new Date().toLocaleTimeString('en-US', {hour12: false}).replace(/^\d{2}:/, '');
+                timeData.shift(); timeData.push(nowStr);
+                vibData.shift(); vibData.push(2.0 + Math.random() * 1.2); 
+                faultData.shift();
+                
+                let newFault = Math.random() * 5; time += 0.1; let baseWave = Math.sin(time * 0.5) * 20; 
+                if (baseWave < -10 && Math.random() < 0.3) { newFault = 25 + Math.random() * 15; vibData[vibData.length - 1] = 3.5 + Math.random() * 1.5; }
+                faultData.push(newFault);
+
+                currentHealth = 75 + baseWave - (newFault > 15 ? 5 : 0) + Math.random()*2;
+                currentHealth = Math.max(45, Math.min(98, currentHealth));
+                trendData.shift(); trendData.push(currentHealth);
+
+                const displayValue = Math.round(currentHealth);
+                healthScoreEl.textContent = displayValue + '%';
+
+                let healthColor = '#4ade80'; let animSpeed = '30s';
+                if (displayValue <= 80 && displayValue > 65) { healthColor = '#f59e0b'; animSpeed = '15s'; } 
+                else if (displayValue <= 65) { healthColor = '#f87171'; animSpeed = '5s'; }
+                
+                healthScoreEl.style.color = healthColor; healthScoreEl.style.textShadow = `0 0 25px ${healthColor}b3`; scoreHud.style.color = healthColor;
+
+                haloGlow.style.background = `radial-gradient(circle, ${healthColor}1a 0%, transparent 70%)`;
+                haloOuter.style.borderColor = healthColor + '40';
+                haloOuter.style.boxShadow = `0 0 ${displayValue <= 65 ? '200px' : '120px'} ${healthColor}26 inset`;
+                haloInner1.style.borderColor = healthColor + '33'; haloInner2.style.borderColor = healthColor + '1a';
+                
+                haloInner1.style.animationDuration = animSpeed; haloInner2.style.animationDuration = (parseFloat(animSpeed)*1.5) + 's';
+
+                const deg = (displayValue / 100) * 270;
+                healthProgress.style.background = `conic-gradient(from 225deg, ${healthColor} ${deg}deg, transparent ${deg}deg)`;
+
+                faultChart.setOption({ xAxis: { data: timeData }, series: [{ data: faultData }] });
+                vibrationChart.setOption({ xAxis: { data: timeData }, series: [{ data: vibData }] });
+                trendChart.setOption({ xAxis: { data: timeData }, series: [{ data: trendData, lineStyle: { color: healthColor }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: `${healthColor}4d`}, {offset: 1, color: `${healthColor}00`}]) } }] });
+            }
+
+            let ringPosition = 35; let ringDirection = 1; let ringDisplacement = 0;
+
+            function updateRingPosition() {
+                if(!isComponentsVisible) return;
+
+                ringDisplacement += 0.15 * ringDirection;
+                if (Math.abs(ringDisplacement) > 8) ringDirection *= -1;
+
+                ringPosition = 35 + ringDisplacement;
+                detailRing.style.left = ringPosition + '%';
+                // 1. 滚圈标签跟随动画 (锚定在中心点，随位移实时平移)
+                labelRing.style.left = (ringPosition + 15) + '%'; 
+                
+                // 文本框坐标 (由于文本框移到了底部，Y变成 95)
+                const leftTextX = 5, leftTextY = 95;
+                const rightTextX = 95, rightTextY = 95;
+
+                // 2. SVG 绕行路径计算
+                // 左间隙：左限位轮右侧(约X=35)
+                const gapLeftX = ringPosition + 2; 
+                // 右间隙：右限位轮左侧(约X=65)
+                const gapRightX = ringPosition + 28; 
+                
+                const targetY = 70; // 间隙处的目标高度 (限位轮和滚圈交接点)
+                const bottomY = 90; // 在限位轮下方进行横向折叠的高度
+
+                let pressureVal = (2.0 + Math.abs(ringDisplacement) * 0.15).toFixed(2);
+                let gapVal = (8.0 + Math.abs(ringDisplacement)).toFixed(1);
+
+                const pressureHTML = `<div class="ind-val pressure">${pressureVal}<span style="font-size:10px;margin-left:2px">MPa</span></div><div class="ind-name">CONTACT PRESSURE</div>`;
+                const gapHTML = `<div class="ind-val gap">${gapVal}<span style="font-size:10px;margin-left:2px">mm</span></div><div class="ind-name">WHEEL GAP</div>`;
+
+                if (ringDisplacement < 0) {
+                    indLeft.innerHTML = pressureHTML; indRight.innerHTML = gapHTML;
+                    // 左侧路径：从文本框(左下) -> 向上到轮子下方(bottomY) -> 向内横移到间隙下方 -> 笔直向上指到间隙
+                    svgLineLeft.setAttribute('d', `M ${leftTextX} ${leftTextY} L ${leftTextX} ${bottomY} L ${gapLeftX} ${bottomY} L ${gapLeftX} ${targetY}`);
+                    svgLineLeft.setAttribute('stroke', '#f87171');
+                    svgLineLeft.setAttribute('marker-end', 'url(#dotRed)');
+
+                    // 右侧路径：从文本框(右下) -> 向上到轮子下方(bottomY) -> 向内横移到间隙下方 -> 笔直向上指到间隙
+                    svgLineRight.setAttribute('d', `M ${rightTextX} ${rightTextY} L ${rightTextX} ${bottomY} L ${gapRightX} ${bottomY} L ${gapRightX} ${targetY}`);
+                    svgLineRight.setAttribute('stroke', '#38bdf8');
+                    svgLineRight.setAttribute('marker-end', 'url(#dotBlue)');
+                } else {
+                    indRight.innerHTML = pressureHTML; indLeft.innerHTML = gapHTML;
+                    svgLineLeft.setAttribute('d', `M ${leftTextX} ${leftTextY} L ${leftTextX} ${bottomY} L ${gapLeftX} ${bottomY} L ${gapLeftX} ${targetY}`);
+                    svgLineLeft.setAttribute('stroke', '#38bdf8');
+                    svgLineLeft.setAttribute('marker-end', 'url(#dotBlue)');
+
+                    svgLineRight.setAttribute('d', `M ${rightTextX} ${rightTextY} L ${rightTextX} ${bottomY} L ${gapRightX} ${bottomY} L ${gapRightX} ${targetY}`);
+                    svgLineRight.setAttribute('stroke', '#f87171');
+                    svgLineRight.setAttribute('marker-end', 'url(#dotRed)');
+                }
+            }
+
+            setInterval(updateDataLogic, 2000);
+            setInterval(updateRingPosition, 30);
+
+            window.addEventListener('resize', () => { 
+                faultChart.resize(); vibrationChart.resize(); trendChart.resize(); 
+            });
+        });
+    </script>
+</body>
+</html>
